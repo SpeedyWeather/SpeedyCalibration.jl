@@ -49,7 +49,7 @@ params = [
 The `path` argument mirrors Julia's property access syntax: the path
 `[:shortwave_radiation, :clouds, :cloud_albedo]` corresponds to
 `model.shortwave_radiation.clouds.cloud_albedo`.
-See [Defining parameters](@ref) for details on how to discover paths, set
+See [Defining parameters](parameters.md) for details on how to discover paths, set
 `grad_scale` for numerically weak gradients, and add multiple parameters.
 
 ## Choose a loss
@@ -70,7 +70,7 @@ For the smoke test we use `OSR_LOSS`:
 loss_config = OSR_LOSS
 ```
 
-See [Loss configuration](@ref) for how to define a custom loss with your own targets
+See [Loss configuration](loss.md) for how to define a custom loss with your own targets
 and weights.
 
 ## Run calibration
@@ -89,7 +89,7 @@ result = calibrate!(
 
 `quick_test_config()` is a convenience function that returns a minimal
 [`TrainingConfig`](@ref) for fast iteration. For a full run, build a
-`TrainingConfig` explicitly; see [Training](@ref).
+`TrainingConfig` explicitly; see [Training](training.md).
 
 While training, SpeedyCalibration prints a progress table:
 
@@ -112,7 +112,7 @@ result.history[:cloud_albedo]  # parameter trajectory
 
 The full history dictionary contains the loss curve, smoothed loss, all flux
 time series, parameter trajectories, and per-parameter gradient means and standard
-deviations. See [Training](@ref) for a complete description of what is recorded.
+deviations. See [Training](training.md) for a complete description of what is recorded.
 
 ## Save and load
 
@@ -140,8 +140,8 @@ figs.fig_grads   # gradient mean ± std per parameter
 
 ## Next steps
 
-- [Defining parameters](@ref): how to find parameter paths, set `grad_scale`,
+- [Defining parameters](parameters.md): how to find parameter paths, set `grad_scale`,
   choose initial values
-- [Loss configuration](@ref): custom targets, Trenberth constants, multi-flux losses
-- [Training](@ref): `TrainingConfig` fields explained, LR decay, early stopping
-- [Validation](@ref): run a post-training climate simulation and compare to defaults
+- [Loss configuration](loss.md): custom targets, Trenberth constants, multi-flux losses
+- [Training](training.md): `TrainingConfig` fields explained, LR decay, early stopping
+- [Validation](validation.md): run a post-training climate simulation and compare to defaults
