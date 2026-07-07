@@ -4,7 +4,6 @@
 
 Gradient-based parameter calibration for [SpeedyWeather.jl](https://github.com/SpeedyWeather/SpeedyWeather.jl).
 
-[![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://speedyweather.github.io/SpeedyCalibration.jl/dev)
 [![License: EUPL-1.2](https://img.shields.io/badge/license-EUPL--1.2-blue.svg)](LICENSE)
 
 SpeedyCalibration.jl implements **online statistical gradient estimation** for tuning
@@ -47,9 +46,10 @@ reparameterisation to enforce physical bounds, gradient clipping, learning rate 
 and history tracking. You define which parameters to tune, what the targets are, and
 how long to run.
 
-See the [documentation](https://speedyweather.github.io/SpeedyCalibration.jl/dev) for the
-full guide, API reference, and diagnostic/plotting tools (anomaly detection, vertical
-profile checks, satellite-reference comparison).
+See [docs/src](docs/src) for the full guide, API reference, and diagnostic/plotting
+tools (anomaly detection, vertical profile checks, satellite-reference comparison).
+A hosted documentation site is not currently built; the markdown sources are readable
+directly in this repository.
 
 ## Citing
 
