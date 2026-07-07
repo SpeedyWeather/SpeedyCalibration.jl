@@ -8,8 +8,8 @@ internal loop structure, and how to interpret the result.
 
 All hyperparameters live in one struct so they can be saved alongside results:
 
-```@example training
-using SpeedyCalibration
+```julia
+using SpeedyCalibration, Dates
 
 cfg = TrainingConfig(
     spinup_days         = 180,
@@ -55,7 +55,7 @@ specify what you want to change.
 
 ### Quick test config
 
-```@example training
+```julia
 qcfg = quick_test_config()   # trunc=5, nlayers=3, spinup=5d, max_batches=5
 ```
 
@@ -122,7 +122,7 @@ after a first run and set the threshold accordingly.
 
 ## The `TrainingResult`
 
-```@example training
+```julia
 using Optimisers, SpeedyWeather
 
 params = [ParamSpec(:cloud_albedo,
@@ -134,7 +134,7 @@ result = calibrate!(params, Optimisers.Adam(1f-2), OSR_LOSS, quick_test_config()
 
 The result bundles everything:
 
-```@example training
+```julia
 result.final_params       # Dict{Symbol,Float32}: name → trained value
 result.conv_info          # NamedTuple with convergence summary
 result.config             # the TrainingConfig used
@@ -142,7 +142,7 @@ result.loss_config        # the LossConfig used
 result.param_specs        # the Vector{ParamSpec} used
 ```
 
-```@example training
+```julia
 result.conv_info.stop_reason
 result.conv_info.best_smoothed_loss
 result.conv_info.total_time

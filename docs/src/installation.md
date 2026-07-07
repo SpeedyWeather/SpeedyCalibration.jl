@@ -26,7 +26,7 @@ julia> Pkg.develop(path="path/to/SpeedyCalibration.jl")
 SpeedyCalibration.jl requires:
 
 - Julia 1.10 or later
-- [SpeedyWeather.jl](https://github.com/SpeedyWeather/SpeedyWeather.jl) ≥ 0.12
+- [SpeedyWeather.jl](https://github.com/SpeedyWeather/SpeedyWeather.jl) ≥ 0.21
 - [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl) ≥ 0.13
 - [Optimisers.jl](https://github.com/FluxML/Optimisers.jl) ≥ 0.3
 
@@ -36,15 +36,16 @@ These are all listed in `Project.toml` and installed automatically.
 
 Visualisation functions (`plot_training`, `plot_climate`) are available as a
 [weak dependency](https://pkgdocs.julialang.org/v1.10/creating-packages/#Conditional-loading-of-code-in-packages-(Extensions))
-on CairoMakie. The package loads without it; install and load CairoMakie separately
+on CairoMakie + GeoMakie. The package loads without them; install and load both separately
 when you need figures:
 
 ```julia
-(@v1.10) pkg> add CairoMakie
+(@v1.10) pkg> add CairoMakie GeoMakie
 ```
 
 ```julia
-using SpeedyCalibration, CairoMakie   # CairoMakie must come after SpeedyCalibration
+using SpeedyCalibration
+using CairoMakie, GeoMakie
 ```
 
 !!! note "Julia version"

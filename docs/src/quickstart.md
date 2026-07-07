@@ -7,13 +7,15 @@ everything works on your machine.
 
 ## Enzyme warmup
 
+`calibrate!` performs Enzyme warmup automatically by default, so most users do not need to call `enzyme_warmup` directly.
+
 Enzyme.jl compiles its AD rules the first time it encounters a function signature.
 This compilation takes a few minutes and would otherwise happen silently inside the
 first training batch, making it appear to hang.
 
 `calibrate!` handles this automatically. When `TrainingConfig.warmup_enzyme = true`
-(the default), it runs one backward pass on the **actual training model** right after
-initialisation, before the spinup. You will see printed output like:
+(the default), it runs one backward pass on the **actual training model** after
+spinup so all flux fields are physically initialized. You will see printed output like:
 
 ```
 Warming up Enzyme (compiling AD rules on actual model)...
@@ -35,7 +37,7 @@ A [`ParamSpec`](@ref) describes one trainable parameter: where it lives in the m
 tree, its physical bounds, and optionally an initial value that overrides the model
 default.
 
-```@example quickstart
+```julia
 params = [
     ParamSpec(:cloud_albedo,
               [:shortwave_radiation, :clouds, :cloud_albedo];
@@ -64,7 +66,7 @@ budget:
 
 For the smoke test we use `OSR_LOSS`:
 
-```@example quickstart
+```julia
 loss_config = OSR_LOSS
 ```
 
@@ -76,7 +78,7 @@ and weights.
 [`calibrate!`](@ref) is the main entry point. Pass the parameter specs, an
 Optimisers.jl optimizer, the loss config, and a [`TrainingConfig`](@ref):
 
-```@example quickstart
+```julia
 result = calibrate!(
     params,
     Optimisers.Adam(1f-2),
@@ -101,7 +103,7 @@ Batch   2 | LR 1.0e-02 | osr= 94.1 | L̄   528.44 | Δp 9.3e-03
 
 `calibrate!` returns a [`TrainingResult`](@ref):
 
-```@example quickstart
+```julia
 result.final_params        # Dict{Symbol,Float32} of trained values
 result.conv_info           # convergence summary NamedTuple
 result.history[:osr]       # OSR time series, one entry per batch

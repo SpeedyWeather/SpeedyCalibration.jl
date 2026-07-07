@@ -29,8 +29,8 @@ Three-flux shortwave budget loss.
 | Flux | Target [W m⁻²] | Weight |
 |------|---------------|--------|
 | OSR (outgoing SW at TOA)       | 101.9 | 1.0 |
-| SRU (surface SW up)            |  23.1 | 1.0 |
-| SRD (surface SW down)          | 184.3 | 1.0 |
+| SRU (surface SW up)            |  23.0 | 1.0 |
+| SRD (surface SW down)          | 168.0 | 1.0 |
 
 Closing the SW budget is a natural first calibration target because SW parameters
 (cloud albedo, ozone, surface albedo) have clear, large gradients.
@@ -42,8 +42,8 @@ Six-flux loss covering both the shortwave and longwave budget.
 | Flux | Target [W m⁻²] | Weight |
 |------|---------------|--------|
 | OSR (outgoing SW at TOA)       | 101.9 | 1.0 |
-| SRU (surface SW up)            |  23.1 | 0.5 |
-| SRD (surface SW down)          | 184.3 | 0.5 |
+| SRU (surface SW up)            |  23.0 | 0.5 |
+| SRD (surface SW down)          | 168.0 | 0.5 |
 | OLR (outgoing LW at TOA)       | 235.0 | 1.0 |
 | LRD (surface LW down)          | 333.0 | 0.3 |
 | LRU (surface LW up)            | 398.0 | 0.3 |
@@ -61,7 +61,7 @@ receive lower weight.
 
 ## Creating a custom `LossConfig`
 
-```@example loss
+```julia
 using SpeedyCalibration
 
 # Target only OLR: useful when calibrating LW parameters
@@ -75,7 +75,7 @@ olr_only = LossConfig(
 The `flux_keys` must be a subset of the six supported keys: `:osr`, `:sru`, `:srd`,
 `:olr`, `:lrd`, `:lru`. Passing an unknown key throws an error immediately.
 
-```@example loss
+```julia
 # SW + LW balance at TOA only
 toa_balance = LossConfig(
     [:osr, :olr];

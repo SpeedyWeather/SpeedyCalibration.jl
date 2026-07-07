@@ -39,8 +39,8 @@ Each stats namedtuple contains:
 | `olr` | W m⁻² | Equilibrium mean outgoing longwave |
 | `srd` | W m⁻² | Equilibrium mean surface SW down |
 | `sru` | W m⁻² | Equilibrium mean surface SW up |
-| `lwd` | W m⁻² | Equilibrium mean surface LW down |
-| `lwu` | W m⁻² | Equilibrium mean surface LW up |
+| `lrd` | W m⁻² | Equilibrium mean surface LW down |
+| `lru` | W m⁻² | Equilibrium mean surface LW up |
 | `precip_total` | mm day⁻¹ | Equilibrium mean global precipitation |
 | `temp_profile` | K | Equilibrium mean temperature, one value per model level |
 
@@ -50,7 +50,7 @@ Print a quick bias table:
 targets = TRENBERTH_LOSS.targets
 
 println("Flux          Default bias   Trained bias")
-for k in [:osr, :olr, :srd, :sru, :lwd, :lwu]
+for k in [:osr, :olr, :srd, :sru, :lrd, :lru]
     t = targets[k]
     d_bias = getproperty(clm.default, k) - t
     t_bias = getproperty(clm.trained, k) - t
@@ -114,8 +114,8 @@ The callback records one value per day (via `Schedule(every=Day(1))`) for each o
 | `osr` | Outgoing shortwave radiation [W m⁻²] |
 | `srd` | Surface SW down [W m⁻²] |
 | `sru` | Surface SW up [W m⁻²] |
-| `lwd` | Surface LW down [W m⁻²] |
-| `lwu` | Surface LW up [W m⁻²] |
+| `lrd` | Surface LW down [W m⁻²] |
+| `lru` | Surface LW up [W m⁻²] |
 | `precip_total` | Total precipitation [mm day⁻¹] |
 | `precip_conv` | Convective precipitation [mm day⁻¹] |
 | `precip_ls` | Large-scale precipitation [mm day⁻¹] |

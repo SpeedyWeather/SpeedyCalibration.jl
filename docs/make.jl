@@ -23,6 +23,8 @@ makedocs(
             "Loss configuration"  => "loss.md",
             "Training"            => "training.md",
             "Validation"          => "validation.md",
+            "Diagnostics"        => "diagnostics.md",
+            "Reference data"     => "reference_data.md",
         ],
         "API" => "api.md",
     ],
