@@ -1,0 +1,27 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: SpeedyCalibration.jl
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - family-names: "Viebig"
+    given-names: "Niklas"
+repository-code: 'https://github.com/SpeedyWeather/SpeedyCalibration.jl'
+abstract: >-
+  Gradient-based parameter calibration for SpeedyWeather.jl via online statistical
+  gradient estimation: running the model continuously and averaging single-timestep
+  Enzyme.jl gradients, instead of differentiating through long, chaotically unstable
+  trajectories.
+license: EUPL-1.2
+
+preferred-citation:
+  type: thesis
+  authors:
+  - family-names: "Viebig"
+    given-names: "Niklas"
+  title: "Gradient-based parameter calibration for SpeedyWeather.jl via online statistical gradient estimation"
+  year: 2026
