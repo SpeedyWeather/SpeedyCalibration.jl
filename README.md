@@ -1,4 +1,4 @@
-# SpeedyCalibration.jl
+# SpeedyCalibration
 
 Gradient-based parameter calibration for [SpeedyWeather.jl](https://github.com/SpeedyWeather/SpeedyWeather.jl) — systematic, reproducible, and fast.
 
