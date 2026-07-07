@@ -1,5 +1,7 @@
 # SpeedyCalibration.jl
 
+![SpeedyCalibration.jl](title_image.png)
+
 Gradient-based parameter calibration for [SpeedyWeather.jl](https://github.com/SpeedyWeather/SpeedyWeather.jl).
 
 [![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://speedyweather.github.io/SpeedyCalibration.jl/dev)
