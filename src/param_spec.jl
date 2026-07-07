@@ -5,7 +5,7 @@ Specifies a single trainable parameter.
 
 - `name`: human-readable identifier (used in history keys and logging)
 - `path`: property chain into the model, e.g. `[:shortwave_radiation, :cloud_albedo]`
-- `bounds`: physical `(lb, ub)` — enforced structurally via sigmoid reparameterisation
+- `bounds`: physical `(lb, ub)`, enforced structurally via sigmoid reparameterisation
 - `initial`: starting value; `nothing` reads the current model default
 - `grad_scale`: per-parameter learning-rate multiplier (compensates weak gradients)
 """
@@ -27,7 +27,7 @@ function ParamSpec(name, path;
               Float32(grad_scale))
 end
 
-# ── Property path helpers ─────────────────────────────────────────────────────
+# Property path helpers
 
 function get_by_path(obj, path::Vector{Symbol})
     result = obj
@@ -45,7 +45,7 @@ function set_by_path!(obj, path::Vector{Symbol}, value)
     setproperty!(parent, path[end], value)
 end
 
-# ── Sigmoid reparameterisation ────────────────────────────────────────────────
+# Sigmoid reparameterisation
 # The optimizer operates in unconstrained θ_raw ∈ (-∞,+∞).
 # Physical θ_phys ∈ (lb, ub) is recovered via the sigmoid.
 # Bounds are therefore structurally enforced and step sizes shrink naturally

@@ -4,7 +4,7 @@ layout: home
 
 hero:
   name: "SpeedyCalibration.jl"
-  tagline: "Gradient-based parameter calibration for SpeedyWeather.jl — systematic, reproducible, and fast."
+  tagline: "Gradient-based parameter calibration for SpeedyWeather.jl."
   actions:
     - theme: brand
       text: Quick start
@@ -20,20 +20,19 @@ hero:
 
 SpeedyCalibration.jl implements **online statistical gradient estimation** for parameter
 calibration in [SpeedyWeather.jl](https://github.com/SpeedyWeather/SpeedyWeather.jl).
-The central idea is simple: instead of differentiating through a long — and chaotically
-unstable — simulation trajectory, we run the model *continuously* and average
-single-timestep [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl) gradients to get
-a stable, memory-efficient estimate of ∂L/∂θ. This makes gradient-based tuning of
-climate model parameterisations practical for the first time.
+Instead of differentiating through a long, chaotically unstable simulation trajectory,
+it runs the model *continuously* and averages single-timestep
+[Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl) gradients to get a stable,
+memory-efficient estimate of ∂L/∂θ.
 
 ## What problem does this solve?
 
-SpeedyWeather's parameterisations contain dozens of free parameters — cloud albedos,
-longwave emissivities, convective time scales — that are currently set by hand. Hand-tuning
+SpeedyWeather's parameterisations contain dozens of free parameters (cloud albedos,
+longwave emissivities, convective time scales) that are currently set by hand. Hand-tuning
 is opaque, hard to reproduce, and does not generalise across model configurations.
 Automatic differentiation can compute gradients of any scalar loss (e.g. bias in
-top-of-atmosphere shortwave flux) with respect to these parameters, enabling systematic
-gradient descent optimisation. The main technical obstacle is that chaotic dynamics cause
+top-of-atmosphere shortwave flux) with respect to these parameters, enabling gradient
+descent optimisation. The main technical obstacle is that chaotic dynamics cause
 gradients of *long* trajectories to explode exponentially. SpeedyCalibration sidesteps
 this by never differentiating through more than one timestep.
 
@@ -60,7 +59,7 @@ result = calibrate!(params, Optimisers.Adam(5f-3), TRENBERTH_LOSS,
 SpeedyCalibration takes care of the Enzyme AD pass, state save/restore, sigmoid
 reparameterisation to enforce physical bounds, gradient clipping, learning rate decay,
 and history tracking. You define which parameters to tune, what the targets are, and how
-long to run — everything else is handled automatically.
+long to run; everything else is handled automatically.
 
 ## Key concepts
 
@@ -69,7 +68,7 @@ long to run — everything else is handled automatically.
 | Trainable parameter | `ParamSpec` | Name, path into model, physical bounds, initial value |
 | Loss function | `LossConfig` | Which fluxes to target, Trenberth reference values, weights |
 | Hyperparameters | `TrainingConfig` | Spinup, batch size, learning rate schedule, stopping criteria |
-| Results | `TrainingResult` | Full history, final parameters, convergence info — serialisable to JLD2 |
+| Results | `TrainingResult` | Full history, final parameters, convergence info; serialisable to JLD2 |
 
 ## Method summary
 
@@ -94,7 +93,8 @@ If you use SpeedyCalibration.jl in research or teaching, please cite the associa
 master thesis:
 
 > Viebig, N. (2026). *Gradient-based parameter calibration for SpeedyWeather.jl via
-> online statistical gradient estimation.* MSc thesis, [University].
+> online statistical gradient estimation.* MSc thesis, ETH Zurich.
+> [doi:10.3929/ethz-c-000799367](https://doi.org/10.3929/ethz-c-000799367)
 
 and the underlying SpeedyWeather paper:
 

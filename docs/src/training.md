@@ -160,8 +160,8 @@ result.conv_info.total_time
 | `:lr` | current learning rate |
 | `:elapsed_time` | wall-clock seconds since start |
 | `:param_change` | mean relative parameter change from previous batch |
-| `:<flux_key>` | e.g. `:osr`, `:olr` — batch mean of that flux |
-| `:<name>` | e.g. `:cloud_albedo` — parameter value after the batch update |
+| `:<flux_key>` | e.g. `:osr`, `:olr`: batch mean of that flux |
+| `:<name>` | e.g. `:cloud_albedo`: parameter value after the batch update |
 | `:grad_<name>` | mean Enzyme gradient for that parameter |
 | `:gradstd_<name>` | std of Enzyme gradient across the batch samples |
 
@@ -191,6 +191,6 @@ result = load_result("run_trenberth_v1.jld2")
 The gradient standard deviation across samples (`gradstd_<name>`) tells you how
 noisy the per-timestep gradient estimate is for each parameter. A high
 `gradstd / |grad_mean|` ratio (signal-to-noise < 1) means the averaging is not
-sufficient — increase `samples_per_batch`. Values much larger than the mean are
+sufficient; increase `samples_per_batch`. Values much larger than the mean are
 normal for chaotic systems; the mean still converges to the correct sensitivity
 as long as the noise is unbiased.

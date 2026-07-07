@@ -1,7 +1,7 @@
 # Validation
 
 After calibration you want to know whether the trained parameters actually improve
-the model's climatology — not just the loss during training. This page covers
+the model's climatology, not just the loss during training. This page covers
 climate validation runs and the `DailyMeansCallback` that powers them.
 
 ## Why post-training validation?
@@ -14,8 +14,8 @@ statistics against both the default model and the Trenberth targets.
 
 ## Running a climate validation
 
-[`run_climate_validation`](@ref) builds two fresh simulations — one with default
-parameters and one with the trained values — runs each for `n_years` years, and
+[`run_climate_validation`](@ref) builds two fresh simulations, one with default
+parameters and one with the trained values, runs each for `n_years` years, and
 returns equilibrium statistics over the last `stat_years`:
 
 ```julia
@@ -122,7 +122,7 @@ The callback records one value per day (via `Schedule(every=Day(1))`) for each o
 | `cloud_top` | Global mean cloud-top level index |
 
 All values are cosine-latitude weighted global means, computed identically to
-the loss function — so comparing `cb.osr` to `TRENBERTH_LOSS.targets[:osr]` is
+the loss function, so comparing `cb.osr` to `TRENBERTH_LOSS.targets[:osr]` is
 a direct measurement of how well the training has worked.
 
 ## Building a custom validation simulation

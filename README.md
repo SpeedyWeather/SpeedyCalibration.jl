@@ -1,6 +1,6 @@
 # SpeedyCalibration.jl
 
-Gradient-based parameter calibration for [SpeedyWeather.jl](https://github.com/SpeedyWeather/SpeedyWeather.jl) — systematic, reproducible, and fast.
+Gradient-based parameter calibration for [SpeedyWeather.jl](https://github.com/SpeedyWeather/SpeedyWeather.jl).
 
 [![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://speedyweather.github.io/SpeedyCalibration.jl/dev)
 [![License: EUPL-1.2](https://img.shields.io/badge/license-EUPL--1.2-blue.svg)](LICENSE)
@@ -8,14 +8,14 @@ Gradient-based parameter calibration for [SpeedyWeather.jl](https://github.com/S
 SpeedyCalibration.jl implements **online statistical gradient estimation** for tuning
 SpeedyWeather's free parameterisation parameters (cloud albedos, longwave emissivities,
 convective time scales, ...) against observational targets, instead of hand-tuning them.
-Rather than differentiating through a long — and chaotically unstable — simulation
+Rather than differentiating through a long, chaotically unstable simulation
 trajectory, it runs the model continuously and averages single-timestep
 [Enzyme.jl](https://github.com/EnzymeAD/Enzyme.jl) gradients to get a stable,
 memory-efficient estimate of ∂L/∂θ.
 
 ## Installation
 
-Not yet registered in the General registry — install directly from GitHub:
+Not yet registered in the General registry; install directly from GitHub:
 
 ```julia
 using Pkg
@@ -55,7 +55,8 @@ If you use SpeedyCalibration.jl in research or teaching, please cite the associa
 master thesis:
 
 > Viebig, N. (2026). *Gradient-based parameter calibration for SpeedyWeather.jl via
-> online statistical gradient estimation.* MSc thesis, [University].
+> online statistical gradient estimation.* MSc thesis, ETH Zurich.
+> [doi:10.3929/ethz-c-000799367](https://doi.org/10.3929/ethz-c-000799367)
 
 and the underlying SpeedyWeather paper:
 

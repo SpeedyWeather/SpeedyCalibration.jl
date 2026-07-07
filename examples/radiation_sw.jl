@@ -7,7 +7,7 @@ Pkg.activate(joinpath(@__DIR__, ".."))
 using SpeedyCalibration, Optimisers, CairoMakie, Dates
 
 param_specs = [
-    # ── SW cloud reflection ───────────────────────────────────────────────────
+    # SW cloud reflection
     ParamSpec(:cloud_albedo,
         [:shortwave_radiation, :clouds, :cloud_albedo];
         bounds=(0.25f0, 0.95f0), initial=0.60f0),
@@ -17,7 +17,7 @@ param_specs = [
     ParamSpec(:stratocumulus_albedo,
         [:shortwave_radiation, :clouds, :stratocumulus_albedo];
         bounds=(0.10f0, 0.90f0), initial=0.50f0),
-    # ── SW atmospheric absorption ─────────────────────────────────────────────
+    # SW atmospheric absorption
     ParamSpec(:absorptivity_water_vapor,
         [:shortwave_radiation, :transmissivity, :absorptivity_water_vapor];
         bounds=(60f0, 140f0), initial=75f0, grad_scale=0.01f0),
@@ -27,7 +27,7 @@ param_specs = [
     ParamSpec(:ozone_absorption,
         [:shortwave_radiation, :radiative_transfer, :ozone_absorption];
         bounds=(0.002f0, 0.020f0), initial=0.01f0),
-    # ── Land surface albedo ───────────────────────────────────────────────────
+    # Land surface albedo
     ParamSpec(:albedo_land,
         [:albedo, :land, :albedo_land];
         bounds=(0.10f0, 0.70f0), initial=0.40f0),
@@ -40,7 +40,7 @@ param_specs = [
     ParamSpec(:albedo_snow,
         [:albedo, :land, :albedo_snow];
         bounds=(0.15f0, 0.75f0), initial=0.40f0),
-    # ── Ocean surface albedo ──────────────────────────────────────────────────
+    # Ocean surface albedo
     ParamSpec(:albedo_ocean,
         [:albedo, :ocean, :albedo_ocean];
         bounds=(0.02f0, 0.10f0), initial=0.06f0),

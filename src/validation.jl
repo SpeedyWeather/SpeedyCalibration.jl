@@ -1,4 +1,4 @@
-# ── Internal helper ───────────────────────────────────────────────────────────
+# Internal helper
 # Builds a model with params applied but does NOT call initialize!.
 # Callers must add any callbacks before calling initialize!(model).
 function _build_model(
@@ -74,7 +74,7 @@ function run_climate_validation(
     )
 end
 
-# ── Internal helpers ──────────────────────────────────────────────────────────
+# Internal helpers
 
 function _run_clm(param_dict, specs, cfg, n_years, label; dt=nothing)
     println("Climate run: $label ...")

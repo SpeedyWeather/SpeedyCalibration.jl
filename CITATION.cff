@@ -24,4 +24,8 @@ preferred-citation:
   - family-names: "Viebig"
     given-names: "Niklas"
   title: "Gradient-based parameter calibration for SpeedyWeather.jl via online statistical gradient estimation"
+  institution:
+    name: "ETH Zurich"
   year: 2026
+  doi: "10.3929/ethz-c-000799367"
+  url: "https://doi.org/10.3929/ethz-c-000799367"

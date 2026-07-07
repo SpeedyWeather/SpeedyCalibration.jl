@@ -1,4 +1,4 @@
-# Stub — plotting lives in ext/SpeedyCalibrationMakieExt.jl (weak dependency).
+# Stub: plotting lives in ext/SpeedyCalibrationMakieExt.jl (weak dependency).
 # These functions are defined only when CairoMakie is loaded.
 
 """

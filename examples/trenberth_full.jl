@@ -7,7 +7,7 @@ Pkg.activate(joinpath(@__DIR__, ".."))
 using SpeedyCalibration, Optimisers, CairoMakie, Dates
 
 param_specs = [
-    # ── SW cloud reflection ───────────────────────────────────────────────────
+    # SW cloud reflection
     ParamSpec(:cloud_albedo,
         [:shortwave_radiation, :clouds, :cloud_albedo];
         bounds=(0.25f0, 0.95f0), initial=0.60f0),
@@ -20,7 +20,7 @@ param_specs = [
     ParamSpec(:precipitation_weight,
         [:shortwave_radiation, :clouds, :precipitation_weight];
         bounds=(0.0f0, 0.8f0), initial=0.20f0),
-    # ── SW atmospheric absorption ─────────────────────────────────────────────
+    # SW atmospheric absorption
     ParamSpec(:absorptivity_water_vapor,
         [:shortwave_radiation, :transmissivity, :absorptivity_water_vapor];
         bounds=(60f0, 140f0), initial=75f0, grad_scale=0.01f0),
@@ -33,7 +33,7 @@ param_specs = [
     ParamSpec(:ozone_absorption,
         [:shortwave_radiation, :radiative_transfer, :ozone_absorption];
         bounds=(0.002f0, 0.020f0), initial=0.01f0),
-    # ── Surface albedo ────────────────────────────────────────────────────────
+    # Surface albedo
     ParamSpec(:albedo_land,
         [:albedo, :land, :albedo_land];
         bounds=(0.10f0, 0.70f0), initial=0.40f0),
@@ -55,7 +55,7 @@ param_specs = [
     ParamSpec(:albedo_ice,
         [:albedo, :ocean, :albedo_ice];
         bounds=(0.30f0, 0.90f0), initial=0.60f0),
-    # ── Longwave transmissivity (Frierson scheme) ─────────────────────────────
+    # Longwave transmissivity (Frierson scheme)
     ParamSpec(:tau0_equator,
         [:longwave_radiation, :transmissivity, :τ₀_equator];
         bounds=(2f0, 12f0), initial=6f0),
@@ -65,14 +65,14 @@ param_specs = [
     ParamSpec(:fl,
         [:longwave_radiation, :transmissivity, :fₗ];
         bounds=(0.0f0, 0.5f0), initial=0.1f0),
-    # ── Longwave emissivity ───────────────────────────────────────────────────
+    # Longwave emissivity
     ParamSpec(:emissivity_ocean,
         [:longwave_radiation, :radiative_transfer, :emissivity_ocean];
         bounds=(0.80f0, 1.00f0), initial=0.98f0),
     ParamSpec(:emissivity_land,
         [:longwave_radiation, :radiative_transfer, :emissivity_land];
         bounds=(0.80f0, 1.00f0), initial=0.98f0),
-    # ── Land hydrology ────────────────────────────────────────────────────────
+    # Land hydrology
     ParamSpec(:infiltration_fraction,
         [:land, :soil_moisture, :infiltration_fraction];
         bounds=(0.05f0, 0.80f0), initial=0.25f0),

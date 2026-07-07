@@ -1,7 +1,7 @@
 """
     enzyme_warmup(sim, loss_config, param_specs)
 
-Force Enzyme to compile its AD rules by running one backward pass on `sim` —
+Force Enzyme to compile its AD rules by running one backward pass on `sim`,
 the **same** model that will be used for training. Must be called after the
 spinup so that radiation and parameterization fields are physically initialised;
 running AD on a freshly-initialised (all-zero flux) state produces NaN gradients.
@@ -24,9 +24,9 @@ end
         → (gradients, means, loss)
 
 Single-timestep reverse-mode AD pass (Enzyme). Returns:
-- `gradients::Vector{Float32}` — `∂L/∂θ` for each `ParamSpec`
-- `means::Dict{Symbol,Float32}` — area-weighted global mean of each tracked flux
-- `loss::Float32` — current loss value
+- `gradients::Vector{Float32}`: `∂L/∂θ` for each `ParamSpec`
+- `means::Dict{Symbol,Float32}`: area-weighted global mean of each tracked flux
+- `loss::Float32`: current loss value
 
 The function saves the full prognostic state before the Enzyme call and restores it
 afterwards so the simulation continues from the same point.
@@ -40,7 +40,7 @@ function compute_gradients!(
     )
     progn = variables.prognostic
 
-    # ── Area-weighted means ───────────────────────────────────────────────────
+    # Area-weighted means
     means, wsums = compute_flux_means(variables, cfg.flux_keys)
     if any(!isfinite(means[k]) for k in cfg.flux_keys)
         nan_means = Dict{Symbol,Float32}(k => NaN32 for k in cfg.flux_keys)
@@ -50,7 +50,7 @@ function compute_gradients!(
     loss   = compute_loss(means, cfg)
     coeffs = loss_coefficients(means, cfg)
 
-    # ── Save full prognostic state ────────────────────────────────────────────
+    # Save full prognostic state
     saved_vor   = deepcopy(progn.vorticity)
     saved_div   = deepcopy(progn.divergence)
     saved_temp  = deepcopy(progn.temperature)
@@ -65,7 +65,7 @@ function compute_gradients!(
     dvariables = Enzyme.make_zero(variables)
     dmodel     = Enzyme.make_zero(model)
 
-    # ── Seed cotangents per ring ──────────────────────────────────────────────
+    # Seed cotangents per ring
     # seed_ij = coeff_k · gw_j / (nlons_j · w_sum_k)  (chain rule through area mean)
     param = variables.parameterizations
     first_field = getproperty(param, FLUX_FIELD[cfg.flux_keys[1]])
@@ -86,7 +86,7 @@ function compute_gradients!(
         end
     end
 
-    # ── Enzyme reverse pass ───────────────────────────────────────────────────
+    # Enzyme reverse pass
     dt = 2 * model.time_stepping.Δt
     Enzyme.autodiff(Enzyme.Reverse, SpeedyWeather.timestep!, Const,
         Duplicated(variables, dvariables),
@@ -95,7 +95,7 @@ function compute_gradients!(
 
     model.feedback.nans_detected = false
 
-    # ── Restore prognostic state ──────────────────────────────────────────────
+    # Restore prognostic state
     progn.vorticity   .= saved_vor
     progn.divergence  .= saved_div
     progn.temperature .= saved_temp

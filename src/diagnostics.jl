@@ -51,7 +51,7 @@ function vertical_gradient_anomalies(profile::AbstractVector; ratio_threshold::R
     return flags
 end
 
-# ── NaNWatchCallback ────────────────────────────────────────────────────────────
+# NaNWatchCallback
 
 """
     NaNWatchCallback(; schedule, fields, bound)

@@ -1,6 +1,6 @@
 # Quick start
 
-This page walks you through a minimal end-to-end calibration — from defining what
+This page walks you through a minimal end-to-end calibration, from defining what
 to tune to reading the trained parameter values. A smoke-test-sized run (trunc=5,
 5 batches, 5-day spinup) completes in a few minutes and is a good first check that
 everything works on your machine.
@@ -20,7 +20,7 @@ Warming up Enzyme (compiling AD rules on actual model)...
 Enzyme warmup complete in 47.3 s.
 ```
 
-The warmup must use the same model that training will use — a warmup on a different
+The warmup must use the same model that training will use: a warmup on a different
 resolution or type is useless because Enzyme's compiled rules are specialised to the
 exact Julia types of `variables` and `model`. If Enzyme is already compiled from an
 earlier run in the same Julia session, skip it:
@@ -87,7 +87,7 @@ result = calibrate!(
 
 `quick_test_config()` is a convenience function that returns a minimal
 [`TrainingConfig`](@ref) for fast iteration. For a full run, build a
-`TrainingConfig` explicitly — see [Training](@ref).
+`TrainingConfig` explicitly; see [Training](@ref).
 
 While training, SpeedyCalibration prints a progress table:
 
@@ -123,7 +123,7 @@ result2 = load_result("my_run.jld2")
 
 ## Plot (optional)
 
-With CairoMakie loaded, `plot_training` produces four figures — loss curve, flux
+With CairoMakie loaded, `plot_training` produces four figures: loss curve, flux
 trajectories, parameter trajectories, and gradient magnitudes:
 
 ```julia
@@ -138,8 +138,8 @@ figs.fig_grads   # gradient mean ± std per parameter
 
 ## Next steps
 
-- [Defining parameters](@ref) — how to find parameter paths, set `grad_scale`,
+- [Defining parameters](@ref): how to find parameter paths, set `grad_scale`,
   choose initial values
-- [Loss configuration](@ref) — custom targets, Trenberth constants, multi-flux losses
-- [Training](@ref) — `TrainingConfig` fields explained, LR decay, early stopping
-- [Validation](@ref) — run a post-training climate simulation and compare to defaults
+- [Loss configuration](@ref): custom targets, Trenberth constants, multi-flux losses
+- [Training](@ref): `TrainingConfig` fields explained, LR decay, early stopping
+- [Validation](@ref): run a post-training climate simulation and compare to defaults

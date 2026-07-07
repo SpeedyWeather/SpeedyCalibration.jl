@@ -63,8 +63,8 @@ Most radiation and convection parameters have three-element paths of the form
 !!! note "Parameters with zero gradient"
     Some parameters cannot be trained because their gradient through the AD graph is
     structurally zero. Known examples:
-    - `conv_time_scale` — the `Second(time_scale).value` integer conversion is opaque to Enzyme
-    - `lsc_rh_threshold` — a step-function boundary; gradient is zero almost everywhere
+    - `conv_time_scale`: the `Second(time_scale).value` integer conversion is opaque to Enzyme
+    - `lsc_rh_threshold`: a step-function boundary; gradient is zero almost everywhere
 
     Leave these out of your `param_specs` list.
 
@@ -85,7 +85,7 @@ The optimizer (Adam, etc.) works in θ_raw space. To recover the physical value:
 ```
 
 where σ is the sigmoid function. Because σ saturates near 0 and 1, the effective
-step size naturally shrinks as a parameter approaches its physical limit — no
+step size naturally shrinks as a parameter approaches its physical limit; no
 clamping or projected gradient is needed. Gradients from Enzyme (which are
 ∂L/∂θ_phys) are multiplied by the chain-rule factor ∂θ_phys/∂θ_raw before
 the optimizer step.
@@ -97,7 +97,7 @@ protective saturation.
 ## The `grad_scale` field
 
 Some parameters have Enzyme gradients that are many orders of magnitude smaller than
-others — not because they are unimportant, but because their numerical range is very
+others, not because they are unimportant, but because their numerical range is very
 different. `grad_scale` is a per-parameter multiplier applied *after* the sigmoid
 chain-rule factor, before gradient clipping. It acts as a per-parameter effective
 learning rate.
@@ -129,7 +129,7 @@ param_specs = [
               [:shortwave_radiation, :clouds, :stratocumulus_albedo];
               bounds=(0.10f0, 0.90f0), initial=0.50f0),
 
-    # SW absorption — note the nesting: transmissivity is a sub-struct
+    # SW absorption: note the nesting, transmissivity is a sub-struct
     ParamSpec(:absorptivity_water_vapor,
               [:shortwave_radiation, :transmissivity, :absorptivity_water_vapor];
               bounds=(60f0, 140f0), initial=75f0, grad_scale=0.01f0),
@@ -137,12 +137,12 @@ param_specs = [
               [:shortwave_radiation, :radiative_transfer, :ozone_absorption];
               bounds=(0.002f0, 0.020f0), initial=0.01f0),
 
-    # Surface albedo — note: lives under :albedo, not :shortwave_radiation
+    # Surface albedo: lives under :albedo, not :shortwave_radiation
     ParamSpec(:albedo_land,
               [:albedo, :land, :albedo_land];
               bounds=(0.10f0, 0.70f0), initial=0.40f0),
 
-    # LW — Frierson transmissivity parameters
+    # LW: Frierson transmissivity parameters
     ParamSpec(:tau0_equator,
               [:longwave_radiation, :transmissivity, :τ₀_equator];
               bounds=(2f0, 12f0), initial=6f0),

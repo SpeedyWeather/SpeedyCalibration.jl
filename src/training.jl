@@ -35,7 +35,7 @@ quick_test_config(; kw...) = TrainingConfig(;
     kw...
 )
 
-# ── Result type ───────────────────────────────────────────────────────────────
+# Result type
 
 """
     TrainingResult
@@ -60,7 +60,7 @@ function Base.show(io::IO, r::TrainingResult)
             n, r.conv_info.stop_reason, r.conv_info.best_smoothed_loss)
 end
 
-# ── Serialisation ─────────────────────────────────────────────────────────────
+# Serialisation
 
 """Save a `TrainingResult` to a JLD2 file."""
 function save_result(result::TrainingResult, path::AbstractString)
@@ -81,11 +81,11 @@ end
     save_artifacts(result, dir)
 
 Write all training artifacts to `dir`:
-- `result.jld2`       — full `TrainingResult` (resumable via `load_result`)
-- `training.log`      — complete text log (same content as verbose output)
-- `history.csv`       — per-batch tabular data for plotting
-- `final_weights.toml`— human-readable final parameter values + bounds
-- `config.toml`       — `TrainingConfig` used for this run
+- `result.jld2`: full `TrainingResult` (resumable via `load_result`)
+- `training.log`: complete text log (same content as verbose output)
+- `history.csv`: per-batch tabular data for plotting
+- `final_weights.toml`: human-readable final parameter values and bounds
+- `config.toml`: `TrainingConfig` used for this run
 """
 function save_artifacts(result::TrainingResult, dir::AbstractString)
     mkpath(dir)
@@ -147,7 +147,7 @@ function _write_config_toml(cfg::TrainingConfig, path::AbstractString)
     end
 end
 
-# ── TeeIO: write to two IOs simultaneously ────────────────────────────────────
+# TeeIO: write to two IOs simultaneously
 
 struct _TeeIO <: IO
     a :: IO
@@ -168,7 +168,7 @@ _output_io(verbose::Bool, log_io::Union{IO,Nothing}) =
     verbose                       ? stdout                  :
     log_io !== nothing            ? log_io                  : devnull
 
-# ── Main entry point ──────────────────────────────────────────────────────────
+# Main entry point
 
 """
     calibrate!(param_specs, optimizer, loss_config, config; save_dir) → TrainingResult
@@ -200,7 +200,7 @@ function calibrate!(
     param_names = [spec.name for spec in param_specs]
     flux_keys   = loss_config.flux_keys
 
-    # ── History initialisation ────────────────────────────────────────────────
+    # History initialisation
     history = Dict{Symbol,Vector}(
         :batch         => Int[],
         :loss          => Float32[],
@@ -217,7 +217,7 @@ function calibrate!(
     end
     loss_window = Float32[]
 
-    # ── Build model ───────────────────────────────────────────────────────────
+    # Build model
     sg     = SpectralGrid(trunc=config.trunc, nlayers=config.nlayers)
     planet = Earth(sg; daily_cycle=config.daily_cycle, seasonal_cycle=false)
     model  = PrimitiveWetModel(sg; planet=planet)
@@ -240,7 +240,7 @@ function calibrate!(
     batch_steps      = ceil(Int, config.batch_days * steps_per_day)
     steps_per_sample = max(1, batch_steps ÷ config.samples_per_batch)
 
-    # ── Sigmoid reparameterisation ────────────────────────────────────────────
+    # Sigmoid reparameterisation
     opt_params  = Float32[to_raw(init_phys[i], spec.bounds[1], spec.bounds[2])
                           for (i, spec) in enumerate(param_specs)]
     phys_values = Float32[sigmoid_param(opt_params[i], spec.bounds[1], spec.bounds[2])
@@ -257,14 +257,14 @@ function calibrate!(
     converged          = false
     start_time         = time()
 
-    # ── Output IO setup ───────────────────────────────────────────────────────
+    # Output IO setup
     log_file = save_dir !== nothing ? (mkpath(save_dir);
                                        open(joinpath(save_dir, "training.log"), "w")) : nothing
     io = _output_io(config.verbose, log_file)
 
     _print_header(io, param_specs, phys_values, opt_params, loss_config, config, current_lr)
 
-    # ── Spinup ────────────────────────────────────────────────────────────────
+    # Spinup
     @printf(io, "\nSpinup (%d days)...\n", config.spinup_days)
     t_spinup = time()
     for _ in 1:(config.spinup_days * steps_per_day)
@@ -273,7 +273,7 @@ function calibrate!(
     @printf(io, "Spinup complete in %.1f s.\n\n", time() - t_spinup)
     flush(io)
 
-    # ── Enzyme warmup on the spun-up model ────────────────────────────────────
+    # Enzyme warmup on the spun-up model
     # Must run AFTER spinup so that radiation/parameterization fields are
     # physically initialised. Running AD on a freshly-initialised model
     # (all-zero flux fields) produces NaN gradients that corrupt the state.
@@ -284,7 +284,7 @@ function calibrate!(
     println(io, "Starting training...")
     println(io, "-" ^ 70)
 
-    # ── Batch loop ────────────────────────────────────────────────────────────
+    # Batch loop
     for batch in 1:config.max_batches
 
         all_grads  = [Float32[] for _ in 1:n_params]
@@ -437,11 +437,11 @@ function calibrate!(
     return result
 end
 
-# ── Logging helpers ───────────────────────────────────────────────────────────
+# Logging helpers
 
 function _print_header(io::IO, param_specs, phys_values, opt_params, loss_config, config, lr)
     println(io, "=" ^ 70)
-    println(io, "SpeedyCalibration.jl — calibrate!")
+    println(io, "SpeedyCalibration.jl: calibrate!")
     println(io, "=" ^ 70)
     for (i, spec) in enumerate(param_specs)
         gs = spec.grad_scale != 1f0 ? @sprintf("  [×%.0f]", spec.grad_scale) : ""

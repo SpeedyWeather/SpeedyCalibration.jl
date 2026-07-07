@@ -29,8 +29,8 @@ Three-flux shortwave budget loss.
 | Flux | Target [W m⁻²] | Weight |
 |------|---------------|--------|
 | OSR (outgoing SW at TOA)       | 101.9 | 1.0 |
-| SRU (surface SW up)            |  23.0 | 1.0 |
-| SRD (surface SW down)          | 168.0 | 1.0 |
+| SRU (surface SW up)            |  23.1 | 1.0 |
+| SRD (surface SW down)          | 184.3 | 1.0 |
 
 Closing the SW budget is a natural first calibration target because SW parameters
 (cloud albedo, ozone, surface albedo) have clear, large gradients.
@@ -42,8 +42,8 @@ Six-flux loss covering both the shortwave and longwave budget.
 | Flux | Target [W m⁻²] | Weight |
 |------|---------------|--------|
 | OSR (outgoing SW at TOA)       | 101.9 | 1.0 |
-| SRU (surface SW up)            |  23.0 | 0.5 |
-| SRD (surface SW down)          | 168.0 | 0.5 |
+| SRU (surface SW up)            |  23.1 | 0.5 |
+| SRD (surface SW down)          | 184.3 | 0.5 |
 | OLR (outgoing LW at TOA)       | 235.0 | 1.0 |
 | LRD (surface LW down)          | 333.0 | 0.3 |
 | LRU (surface LW up)            | 398.0 | 0.3 |
@@ -64,7 +64,7 @@ receive lower weight.
 ```@example loss
 using SpeedyCalibration
 
-# Target only OLR — useful when calibrating LW parameters
+# Target only OLR: useful when calibrating LW parameters
 olr_only = LossConfig(
     [:olr];
     targets = Dict(:olr => 235.0f0),
@@ -112,7 +112,7 @@ Weights serve two purposes:
 
 1. **Physical normalisation.** The absolute value of (F̄_k − F_k*)² depends on the
    scale of the flux. OSR deviations of ∼10 W m⁻² are much more common than SRU
-   deviations of the same size — the two fluxes occupy different parts of the energy
+   deviations of the same size; the two fluxes occupy different parts of the energy
    budget. Equal weights therefore give the larger fluxes proportionally more
    influence. Normalising each term by (F_k*)² makes the loss dimensionless with
    equal relative deviations treated equally.

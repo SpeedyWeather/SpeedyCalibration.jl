@@ -39,7 +39,7 @@ function LossConfig(flux_keys::AbstractVector{Symbol};
     LossConfig(collect(flux_keys), targets, weights)
 end
 
-# ── Pre-built configurations ──────────────────────────────────────────────────
+# Pre-built configurations
 
 const OSR_LOSS = LossConfig(
     [:osr];
@@ -90,7 +90,7 @@ function make_normalized_loss(flux_keys::AbstractVector{Symbol},
     LossConfig(collect(flux_keys), targets, weights)
 end
 
-# ── Flux extraction ───────────────────────────────────────────────────────────
+# Flux extraction
 
 """
     compute_flux_means(variables, flux_keys) → Dict{Symbol,Float32}
@@ -139,7 +139,7 @@ end
 """
     loss_coefficients(means, loss_config) → Dict{Symbol,Float32}
 
-Returns `2·w_k·(mean_k − target_k)` for each flux — the cotangent seeds
+Returns `2·w_k·(mean_k − target_k)` for each flux: the cotangent seeds
 before dividing by area weights in the backward pass.
 """
 function loss_coefficients(means::Dict{Symbol,Float32}, cfg::LossConfig)

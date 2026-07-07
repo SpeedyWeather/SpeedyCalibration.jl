@@ -6,7 +6,7 @@ using GeoMakie
 using RingGrids
 import GeoMakie.Makie.GeometryBasics: Polygon, Point
 
-# ── plot_training ─────────────────────────────────────────────────────────────
+# plot_training
 
 function SpeedyCalibration.plot_training(
         result::TrainingResult;
@@ -20,7 +20,7 @@ function SpeedyCalibration.plot_training(
     ax_kw = (xgridvisible=false, ygridvisible=false,
              topspinevisible=false, rightspinevisible=false)
 
-    # ── Loss curve ────────────────────────────────────────────────────────────
+    # Loss curve
     fig_loss = Figure(size=(900, 320), fontsize=13)
     ax1 = Axis(fig_loss[1,1]; xlabel="Batch", ylabel="Loss",
                title="Training loss", ax_kw...)
@@ -32,7 +32,7 @@ function SpeedyCalibration.plot_training(
                title="LR schedule", ax_kw...)
     lines!(ax2, batches, h[:lr]; color=:tomato, linewidth=2)
 
-    # ── Flux trajectories ─────────────────────────────────────────────────────
+    # Flux trajectories
     ncols   = min(3, length(fkeys))
     nrows   = ceil(Int, length(fkeys) / ncols)
     fig_flux = Figure(size=(ncols*380, nrows*260), fontsize=13)
@@ -46,7 +46,7 @@ function SpeedyCalibration.plot_training(
         hlines!(ax, [target]; color=:black, linestyle=:dash, linewidth=1)
     end
 
-    # ── Parameter trajectories ────────────────────────────────────────────────
+    # Parameter trajectories
     ncols_p  = min(4, length(specs))
     nrows_p  = ceil(Int, length(specs) / ncols_p)
     fig_params = Figure(size=(ncols_p*300, nrows_p*240), fontsize=13)
@@ -60,7 +60,7 @@ function SpeedyCalibration.plot_training(
         hlines!(ax, [lb, ub]; color=:gray60, linestyle=:dash, linewidth=1)
     end
 
-    # ── Gradient magnitudes ───────────────────────────────────────────────────
+    # Gradient magnitudes
     fig_grads = Figure(size=(ncols_p*300, nrows_p*240), fontsize=13)
     for (i, spec) in enumerate(specs)
         row = (i-1) ÷ ncols_p + 1
@@ -88,7 +88,7 @@ function SpeedyCalibration.plot_training(
     return (; fig_loss, fig_flux, fig_params, fig_grads)
 end
 
-# ── plot_climate ──────────────────────────────────────────────────────────────
+# plot_climate
 
 function SpeedyCalibration.plot_climate(
         validation;
@@ -101,7 +101,7 @@ function SpeedyCalibration.plot_climate(
     default_cb = validation.default_cb
     trained_cb = validation.trained_cb
 
-    # ── SW radiation budget ───────────────────────────────────────────────────
+    # SW radiation budget
     sw_panels = [
         ("OSR [W m⁻²]", cb -> cb.osr,  101.9),
         ("SRD [W m⁻²]", cb -> cb.srd,  168.0),
@@ -117,7 +117,7 @@ function SpeedyCalibration.plot_climate(
         col == 1 && axislegend(ax; position=:rt)
     end
 
-    # ── LW budget ─────────────────────────────────────────────────────────────
+    # LW budget
     lw_panels = [
         ("OLR [W m⁻²]", cb -> cb.olr,  235.0),
         ("LRD [W m⁻²]", cb -> cb.lrd,  333.0),
@@ -133,7 +133,7 @@ function SpeedyCalibration.plot_climate(
         col == 1 && axislegend(ax; position=:rt)
     end
 
-    # ── Precipitation ─────────────────────────────────────────────────────────
+    # Precipitation
     fig_precip = Figure(size=(900, 320), fontsize=13)
     ax_p = Axis(fig_precip[1,1]; xlabel="Day", ylabel="mm day⁻¹",
                 title="Total precipitation", ax_kw...)
@@ -142,7 +142,7 @@ function SpeedyCalibration.plot_climate(
     hlines!(ax_p, [2.74]; color=:black, linestyle=:dash, linewidth=1, label="ERA5 ~2.74")
     axislegend(ax_p; position=:rt)
 
-    # ── Trenberth summary bar chart ───────────────────────────────────────────
+    # Trenberth summary bar chart
     summary_keys = [("OSR",  s -> s.osr,  101.9),
                     ("OLR",  s -> s.olr,  235.0),
                     ("SRD",  s -> s.srd,  168.0),
@@ -166,7 +166,7 @@ function SpeedyCalibration.plot_climate(
     hlines!(ax_s, [0.0]; color=:black, linewidth=1)
     axislegend(ax_s; position=:rt)
 
-    # ── Vertical temperature profile + anomaly flags ──────────────────────────
+    # Vertical temperature profile + anomaly flags
     fig_temp = SpeedyCalibration.plot_vertical_profile(
         validation.trained.temp_profile;
         reference   = validation.default.temp_profile,
@@ -187,7 +187,7 @@ function SpeedyCalibration.plot_climate(
     return (; fig_rad, fig_lw, fig_precip, fig_summary, fig_temp)
 end
 
-# ── plot_vertical_profile ────────────────────────────────────────────────────
+# plot_vertical_profile
 
 """
     plot_vertical_profile(profile; reference=nothing, label="profile", ref_label="reference",
@@ -227,7 +227,7 @@ function SpeedyCalibration.plot_vertical_profile(
     return fig
 end
 
-# ── plot_nan_watch ────────────────────────────────────────────────────────────
+# plot_nan_watch
 
 """
     plot_nan_watch(cb::NaNWatchCallback; save_dir=nothing) -> Figure
@@ -263,7 +263,7 @@ function SpeedyCalibration.plot_nan_watch(
     return fig
 end
 
-# ── Spatial map plotting ──────────────────────────────────────────────────────
+# Spatial map plotting
 
 """
     plot_field_map(lons, lats, data; colormap=:viridis, colorrange=nothing,
@@ -298,7 +298,7 @@ end
                        coastline_color=:white, title="") -> Figure
 
 Plot a `RingGrids` field directly on its native grid as cell polygons (no
-interpolation) — generalises `plot_native!` from
+interpolation). Generalises `plot_native!` from
 `validation/chapter3_validation_plots.ipynb` into a standalone, reusable
 function returning its own `Figure`.
 """
@@ -377,7 +377,7 @@ function SpeedyCalibration.plot_comparison_map(
     return fig
 end
 
-# ── plot_experiment_comparison ────────────────────────────────────────────────
+# plot_experiment_comparison
 
 """
     plot_experiment_comparison(results::Vector{TrainingResult}; labels=nothing) -> NamedTuple
@@ -400,7 +400,7 @@ function SpeedyCalibration.plot_experiment_comparison(
     ax_kw = (xgridvisible=false, ygridvisible=false,
              topspinevisible=false, rightspinevisible=false)
 
-    # ── Loss curves overlay ───────────────────────────────────────────────────
+    # Loss curves overlay
     fig_loss = Figure(size=(900, 400), fontsize=13)
     ax_l = Axis(fig_loss[1,1]; xlabel="Batch", ylabel="Smoothed loss",
                 title="Loss comparison across runs", yscale=log10, ax_kw...)
@@ -410,7 +410,7 @@ function SpeedyCalibration.plot_experiment_comparison(
     end
     axislegend(ax_l; position=:rt)
 
-    # ── Parameter endpoints ───────────────────────────────────────────────────
+    # Parameter endpoints
     all_names = unique(vcat([[s.name for s in r.param_specs] for r in results]...))
     fig_params = Figure(size=(max(500, 200*length(all_names)), 400), fontsize=13)
     ax_p = Axis(fig_params[1,1]; xticks=(1:length(all_names), string.(all_names)),
