@@ -5,7 +5,7 @@ Gradient-based parameter calibration for [SpeedyWeather.jl](https://github.com/S
 [![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://speedyweather.github.io/SpeedyCalibration.jl/dev)
 [![License: EUPL-1.2](https://img.shields.io/badge/license-EUPL--1.2-blue.svg)](LICENSE)
 
-SpeedyCalibration.jl implements **online statistical gradient estimation** for tuning
+SpeedyCalibration implements **online statistical gradient estimation** for tuning
 SpeedyWeather's free parameterisation parameters (cloud albedos, longwave emissivities,
 convective time scales, ...) against observational targets, instead of hand-tuning them.
 Rather than differentiating through a long — and chaotically unstable — simulation
