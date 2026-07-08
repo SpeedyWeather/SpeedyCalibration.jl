@@ -43,12 +43,10 @@ A typical calibration run looks like this:
 ```julia
 using SpeedyCalibration, Optimisers
 
-enzyme_warmup()   # compile Enzyme AD rules once per session
-
 params = [
     ParamSpec(:cloud_albedo, [:shortwave_radiation, :clouds, :cloud_albedo];
               bounds=(0.1f0, 0.85f0)),
-    ParamSpec(:ozone_absorption, [:shortwave_radiation, :ozone_absorption];
+    ParamSpec(:ozone_absorption, [:shortwave_radiation, :radiative_transfer, :ozone_absorption];
               bounds=(0.001f0, 0.1f0)),
 ]
 

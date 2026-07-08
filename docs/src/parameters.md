@@ -17,7 +17,7 @@ end
 
 Create a `ParamSpec` with the keyword constructor:
 
-```@example params
+```julia
 using SpeedyCalibration
 
 spec = ParamSpec(:cloud_albedo,

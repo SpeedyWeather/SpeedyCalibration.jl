@@ -1,5 +1,11 @@
 # API Reference
 
+## Package
+
+```@docs
+SpeedyCalibration
+```
+
 ## Parameter specification
 
 ```@docs
@@ -10,9 +16,6 @@ ParamSpec
 
 ```@docs
 LossConfig
-OSR_LOSS
-OSR_SRU_SRD_LOSS
-TRENBERTH_LOSS
 make_normalized_loss
 ```
 
@@ -32,7 +35,6 @@ save_artifacts
 
 ```@docs
 enzyme_warmup
-compute_gradients!
 ```
 
 ## Callbacks

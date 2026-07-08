@@ -61,7 +61,7 @@ receive lower weight.
 
 ## Creating a custom `LossConfig`
 
-```@example loss
+```julia
 using SpeedyCalibration
 
 # Target only OLR: useful when calibrating LW parameters
@@ -75,7 +75,7 @@ olr_only = LossConfig(
 The `flux_keys` must be a subset of the six supported keys: `:osr`, `:sru`, `:srd`,
 `:olr`, `:lrd`, `:lru`. Passing an unknown key throws an error immediately.
 
-```@example loss
+```julia
 # SW + LW balance at TOA only
 toa_balance = LossConfig(
     [:osr, :olr];

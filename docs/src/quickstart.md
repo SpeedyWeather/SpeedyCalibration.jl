@@ -7,13 +7,15 @@ everything works on your machine.
 
 ## Enzyme warmup
 
+`calibrate!` performs Enzyme warmup automatically by default, so most users do not need to call `enzyme_warmup` directly.
+
 Enzyme.jl compiles its AD rules the first time it encounters a function signature.
 This compilation takes a few minutes and would otherwise happen silently inside the
 first training batch, making it appear to hang.
 
 `calibrate!` handles this automatically. When `TrainingConfig.warmup_enzyme = true`
-(the default), it runs one backward pass on the **actual training model** right after
-initialisation, before the spinup. You will see printed output like:
+(the default), it runs one backward pass on the **actual training model** after
+spinup so all flux fields are physically initialized. You will see printed output like:
 
 ```
 Warming up Enzyme (compiling AD rules on actual model)...
@@ -35,7 +37,7 @@ A [`ParamSpec`](@ref) describes one trainable parameter: where it lives in the m
 tree, its physical bounds, and optionally an initial value that overrides the model
 default.
 
-```@example quickstart
+```julia
 params = [
     ParamSpec(:cloud_albedo,
               [:shortwave_radiation, :clouds, :cloud_albedo];
@@ -47,7 +49,7 @@ params = [
 The `path` argument mirrors Julia's property access syntax: the path
 `[:shortwave_radiation, :clouds, :cloud_albedo]` corresponds to
 `model.shortwave_radiation.clouds.cloud_albedo`.
-See [Defining parameters](@ref) for details on how to discover paths, set
+See [Defining parameters](parameters.md) for details on how to discover paths, set
 `grad_scale` for numerically weak gradients, and add multiple parameters.
 
 ## Choose a loss
@@ -64,11 +66,11 @@ budget:
 
 For the smoke test we use `OSR_LOSS`:
 
-```@example quickstart
+```julia
 loss_config = OSR_LOSS
 ```
 
-See [Loss configuration](@ref) for how to define a custom loss with your own targets
+See [Loss configuration](loss.md) for how to define a custom loss with your own targets
 and weights.
 
 ## Run calibration
@@ -76,7 +78,7 @@ and weights.
 [`calibrate!`](@ref) is the main entry point. Pass the parameter specs, an
 Optimisers.jl optimizer, the loss config, and a [`TrainingConfig`](@ref):
 
-```@example quickstart
+```julia
 result = calibrate!(
     params,
     Optimisers.Adam(1f-2),
@@ -87,7 +89,7 @@ result = calibrate!(
 
 `quick_test_config()` is a convenience function that returns a minimal
 [`TrainingConfig`](@ref) for fast iteration. For a full run, build a
-`TrainingConfig` explicitly; see [Training](@ref).
+`TrainingConfig` explicitly; see [Training](training.md).
 
 While training, SpeedyCalibration prints a progress table:
 
@@ -101,7 +103,7 @@ Batch   2 | LR 1.0e-02 | osr= 94.1 | L̄   528.44 | Δp 9.3e-03
 
 `calibrate!` returns a [`TrainingResult`](@ref):
 
-```@example quickstart
+```julia
 result.final_params        # Dict{Symbol,Float32} of trained values
 result.conv_info           # convergence summary NamedTuple
 result.history[:osr]       # OSR time series, one entry per batch
@@ -110,7 +112,7 @@ result.history[:cloud_albedo]  # parameter trajectory
 
 The full history dictionary contains the loss curve, smoothed loss, all flux
 time series, parameter trajectories, and per-parameter gradient means and standard
-deviations. See [Training](@ref) for a complete description of what is recorded.
+deviations. See [Training](training.md) for a complete description of what is recorded.
 
 ## Save and load
 
@@ -138,8 +140,8 @@ figs.fig_grads   # gradient mean ± std per parameter
 
 ## Next steps
 
-- [Defining parameters](@ref): how to find parameter paths, set `grad_scale`,
+- [Defining parameters](parameters.md): how to find parameter paths, set `grad_scale`,
   choose initial values
-- [Loss configuration](@ref): custom targets, Trenberth constants, multi-flux losses
-- [Training](@ref): `TrainingConfig` fields explained, LR decay, early stopping
-- [Validation](@ref): run a post-training climate simulation and compare to defaults
+- [Loss configuration](loss.md): custom targets, Trenberth constants, multi-flux losses
+- [Training](training.md): `TrainingConfig` fields explained, LR decay, early stopping
+- [Validation](validation.md): run a post-training climate simulation and compare to defaults
