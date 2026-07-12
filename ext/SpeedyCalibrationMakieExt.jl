@@ -101,14 +101,20 @@ function SpeedyCalibration.plot_climate(
     default_cb = validation.default_cb
     trained_cb = validation.trained_cb
 
+    # reference target: use loss_config's target if this flux was trained against it,
+    # otherwise fall back to the fixed Trenberth value
+    ref_for(key, trenberth) = !isnothing(loss_config) && haskey(loss_config.targets, key) ?
+        Float64(loss_config.targets[key]) : trenberth
+
     # SW radiation budget
     sw_panels = [
-        ("OSR [W m⁻²]", cb -> cb.osr,  101.9),
-        ("SRD [W m⁻²]", cb -> cb.srd,  168.0),
-        ("SRU [W m⁻²]", cb -> cb.sru,   23.0),
+        (:osr, "OSR [W m⁻²]", cb -> cb.osr,  101.9),
+        (:srd, "SRD [W m⁻²]", cb -> cb.srd,  168.0),
+        (:sru, "SRU [W m⁻²]", cb -> cb.sru,   23.0),
     ]
     fig_rad = Figure(size=(1400, 320), fontsize=13)
-    for (col, (title, extractor, ref)) in enumerate(sw_panels)
+    for (col, (key, title, extractor, trenberth)) in enumerate(sw_panels)
+        ref = ref_for(key, trenberth)
         ax = Axis(fig_rad[1, col]; xlabel="Day", ylabel="W m⁻²",
                   title=title, ax_kw...)
         lines!(ax, default_cb.days, extractor(default_cb); color=:gray50, label="default")
@@ -119,12 +125,13 @@ function SpeedyCalibration.plot_climate(
 
     # LW budget
     lw_panels = [
-        ("OLR [W m⁻²]", cb -> cb.olr,  235.0),
-        ("LRD [W m⁻²]", cb -> cb.lrd,  333.0),
-        ("LRU [W m⁻²]", cb -> cb.lru,  398.0),
+        (:olr, "OLR [W m⁻²]", cb -> cb.olr,  235.0),
+        (:lrd, "LRD [W m⁻²]", cb -> cb.lrd,  333.0),
+        (:lru, "LRU [W m⁻²]", cb -> cb.lru,  398.0),
     ]
     fig_lw = Figure(size=(1400, 320), fontsize=13)
-    for (col, (title, extractor, ref)) in enumerate(lw_panels)
+    for (col, (key, title, extractor, trenberth)) in enumerate(lw_panels)
+        ref = ref_for(key, trenberth)
         ax = Axis(fig_lw[1, col]; xlabel="Day", ylabel="W m⁻²",
                   title=title, ax_kw...)
         lines!(ax, default_cb.days, extractor(default_cb); color=:gray50, label="default")
@@ -143,16 +150,16 @@ function SpeedyCalibration.plot_climate(
     axislegend(ax_p; position=:rt)
 
     # Trenberth summary bar chart
-    summary_keys = [("OSR",  s -> s.osr,  101.9),
-                    ("OLR",  s -> s.olr,  235.0),
-                    ("SRD",  s -> s.srd,  168.0),
-                    ("SRU",  s -> s.sru,   23.0),
-                    ("LRD",  s -> s.lrd,  333.0),
-                    ("LRU",  s -> s.lru,  398.0)]
-    labels  = [t for (t,_,_) in summary_keys]
-    refs    = Float64[r    for (_,_,r) in summary_keys]
-    def_v   = Float64[f(validation.default) for (_,f,_) in summary_keys]
-    train_v = Float64[f(validation.trained) for (_,f,_) in summary_keys]
+    summary_keys = [(:osr, "OSR",  s -> s.osr,  101.9),
+                    (:olr, "OLR",  s -> s.olr,  235.0),
+                    (:srd, "SRD",  s -> s.srd,  168.0),
+                    (:sru, "SRU",  s -> s.sru,   23.0),
+                    (:lrd, "LRD",  s -> s.lrd,  333.0),
+                    (:lru, "LRU",  s -> s.lru,  398.0)]
+    labels  = [t for (_,t,_,_) in summary_keys]
+    refs    = Float64[ref_for(k, r) for (k,_,_,r) in summary_keys]
+    def_v   = Float64[f(validation.default) for (_,_,f,_) in summary_keys]
+    train_v = Float64[f(validation.trained) for (_,_,f,_) in summary_keys]
     def_err   = def_v   .- refs
     train_err = train_v .- refs
 

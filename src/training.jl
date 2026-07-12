@@ -43,11 +43,18 @@ quick_test_config(; kw...) = TrainingConfig(;
 Returned by `calibrate!`. Contains the full training history, final parameter
 values, convergence information, and the config objects used.
 
+`final_params` are the parameters at the last batch trained — training can
+drift past its optimum (e.g. under an unbalanced multi-flux loss) and end on
+a worse point than it passed through. `best_params` are the parameters at
+the batch with the lowest smoothed loss (`conv_info.best_batch`); prefer
+these unless you specifically want the end-of-training state.
+
 Use `save(result, path)` / `load_result(path)` for resume-safe long runs.
 """
 struct TrainingResult
     history      :: Dict{Symbol,Vector}
     final_params :: Dict{Symbol,Float32}
+    best_params  :: Dict{Symbol,Float32}
     conv_info    :: NamedTuple
     config       :: TrainingConfig
     loss_config  :: LossConfig
@@ -250,6 +257,8 @@ function calibrate!(
     current_lr = optimizer isa Optimisers.Adam ? Float32(optimizer.eta) : NaN32
 
     best_smoothed_loss = Inf32
+    best_phys_values   = copy(phys_values)
+    best_batch         = 0
     batches_since_best = 0
     lr_decay_count     = 0
     prev_phys          = copy(phys_values)
@@ -346,6 +355,8 @@ function calibrate!(
 
         if smoothed_loss < best_smoothed_loss
             best_smoothed_loss = smoothed_loss
+            best_phys_values   = copy(phys_values)
+            best_batch         = batch
             batches_since_best = 0
         else
             batches_since_best += 1
@@ -416,18 +427,27 @@ function calibrate!(
 
     final_params = Dict(spec.name => phys_values[i]
                         for (i, spec) in enumerate(param_specs))
+    best_params = Dict(spec.name => best_phys_values[i]
+                       for (i, spec) in enumerate(param_specs))
     conv_info = (
         converged          = converged,
         stop_reason        = stop_reason,
         total_batches      = length(history[:batch]),
         best_smoothed_loss = best_smoothed_loss,
+        best_batch         = best_batch,
         total_time         = time() - start_time,
     )
 
     _print_summary(io, param_specs, init_phys, phys_values, history,
                    flux_keys, loss_config, conv_info)
 
-    result = TrainingResult(history, final_params, conv_info, config, loss_config, param_specs)
+    if best_batch != length(history[:batch])
+        @printf(io, "\nNOTE: final batch (%d, loss=%.2f) is worse than best batch (%d, loss=%.4f).\n",
+                length(history[:batch]), history[:smoothed_loss][end], best_batch, best_smoothed_loss)
+        println(io, "      Use `result.best_params` instead of `result.final_params` to recover the best checkpoint.")
+    end
+
+    result = TrainingResult(history, final_params, best_params, conv_info, config, loss_config, param_specs)
 
     if save_dir !== nothing
         log_file !== nothing && close(log_file)
