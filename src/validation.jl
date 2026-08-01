@@ -43,8 +43,11 @@ end
 """
     run_climate_validation(result; n_years, stat_years) → NamedTuple
 
-Run a climate validation with the trained parameter values from `result`.
-Returns equilibrium means over the last `stat_years` of a `n_years` run.
+Run a climate validation with `result.best_params` (the lowest-smoothed-loss
+checkpoint, not `result.final_params` — training can drift past its optimum
+under an unbalanced multi-flux loss, so the best checkpoint is the
+representative one to validate). Returns equilibrium means over the last
+`stat_years` of a `n_years` run.
 
 Also runs the same simulation with default parameters for comparison.
 """
@@ -58,7 +61,7 @@ function run_climate_validation(
     specs = result.param_specs
 
     default_dict  = Dict{Symbol,Float32}()
-    trained_dict  = result.final_params
+    trained_dict  = result.best_params
 
     default_clm = _run_clm(default_dict,  specs, cfg, n_years, "default"; dt=dt)
     trained_clm = _run_clm(trained_dict,  specs, cfg, n_years, "trained"; dt=dt)
