@@ -26,3 +26,19 @@ examples/output/
 
 # vs code
 .vscode/
+
+# Exploratory/diagnostic notebooks and scripts, not tracked by default.
+# Keeps day-to-day experimentation out of `git status`/`git add -A` without
+# losing anything locally. To publish something specific, force-add it:
+#   git add -f examples/some_folder/some_notebook.ipynb
+examples/trenberth_blowup_fix/
+examples/trenberth_batchdays_sweep/
+examples/trenberth_lrd_weight_sweep/
+examples/trenberth_structural_fixes/
+examples/trenberth_validation/
+examples/trenberth_batchdays_gradcount_sweep/
+examples/trenberth_ensemble_uncertainty/
+examples/single_param_diagnostics/
+
+# Scratch PR-description drafts, not part of the codebase.
+.pr_body*.md
