@@ -19,6 +19,7 @@ Base.@kwdef struct TrainingConfig
     max_lr_decays       :: Int       = 3
     trunc               :: Int       = 31
     nlayers             :: Int       = 8
+    dt                  :: Union{Nothing,Period} = nothing
     start_date          :: DateTime  = DateTime(2000, 3, 21)
     verbose             :: Bool      = true
     warmup_enzyme       :: Bool      = true
@@ -238,6 +239,11 @@ function calibrate!(
         push!(init_phys, val)
     end
     model = SpeedyWeather.reconstruct(model, p)
+    if config.dt !== nothing
+        # override the auto-scaled Δt (which grows large at coarse trunc, e.g. ~3h at
+        # trunc=5 -- too large to be numerically stable with the full physics package)
+        SpeedyWeather.set!(model.time_stepping; Δt=config.dt)
+    end
     sim   = initialize!(model)
     sim.variables.prognostic.clock.time = config.start_date
     SpeedyWeather.initialize!(sim; period=Day(365*100), output=false)
@@ -421,6 +427,24 @@ function calibrate!(
             stop_reason = "smoothed loss below threshold ($(config.loss_threshold))"
             @printf(io, "CONVERGED: smoothed_loss %.4f < %.4f\n",
                     smoothed_loss, config.loss_threshold)
+            break
+        end
+
+        # Patience-based early stop: once LR decay is exhausted (or disabled) and
+        # there's still been no improvement for `patience` batches, further batches
+        # are wasted at best and actively harmful at worst -- loss can keep climbing
+        # indefinitely on a divergent run (observed: best loss 601 at batch 57, then
+        # rose to 2133 by batch 300 with no further LR decays once max_lr_decays was
+        # reached). best_params/best_batch are already tracked correctly regardless,
+        # but stopping here saves compute and avoids `final_params` silently landing
+        # in a blown-up regime.
+        lr_decay_exhausted = !config.enable_lr_decay || lr_decay_count >= config.max_lr_decays
+        if lr_decay_exhausted && batches_since_best >= config.patience
+            stop_reason = "no improvement for $(config.patience) batches" *
+                          (config.enable_lr_decay ?
+                           " after exhausting $(config.max_lr_decays) LR decays" : "")
+            @printf(io, "EARLY STOP: %s (best batch %d, best smoothed_loss %.4f)\n",
+                    stop_reason, best_batch, best_smoothed_loss)
             break
         end
     end
