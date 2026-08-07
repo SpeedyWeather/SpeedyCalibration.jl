@@ -2,15 +2,16 @@
 # Builds a model with params applied but does NOT call initialize!.
 # Callers must add any callbacks before calling initialize!(model).
 function _build_model(
-        param_dict  :: Dict{Symbol,Float32},
-        param_specs :: Vector{ParamSpec};
-        trunc       :: Int  = 31,
-        nlayers     :: Int  = 8,
-        daily_cycle :: Bool = true,
-        dt          :: Union{Period,Nothing} = nothing,
+        param_dict     :: Dict{Symbol,Float32},
+        param_specs    :: Vector{ParamSpec};
+        trunc          :: Int  = 31,
+        nlayers        :: Int  = 8,
+        daily_cycle    :: Bool = true,
+        seasonal_cycle :: Bool = false,
+        dt             :: Union{Period,Nothing} = nothing,
     )
     sg     = SpectralGrid(trunc=trunc, nlayers=nlayers)
-    planet = Earth(sg; daily_cycle=daily_cycle, seasonal_cycle=false)
+    planet = Earth(sg; daily_cycle=daily_cycle, seasonal_cycle=seasonal_cycle)
     time_stepping = isnothing(dt) ? Leapfrog(sg) : Leapfrog(sg; Δt_at_T31=dt)
     model  = PrimitiveWetModel(sg; planet=planet, time_stepping=time_stepping)
     p      = vec(parameters(model))
@@ -21,20 +22,21 @@ function _build_model(
 end
 
 """
-    build_climate_sim(param_dict, param_specs; trunc, nlayers, start_date, daily_cycle) → Simulation
+    build_climate_sim(param_dict, param_specs; trunc, nlayers, start_date, daily_cycle, seasonal_cycle) → Simulation
 
 Construct a fresh simulation with parameter values from `param_dict`
 (a `Dict{Symbol,Float32}` keyed by `ParamSpec.name`).
 """
 function build_climate_sim(
-        param_dict   :: Dict{Symbol,Float32},
-        param_specs  :: Vector{ParamSpec};
-        trunc        :: Int      = 31,
-        nlayers      :: Int      = 8,
-        start_date   :: DateTime = DateTime(2000, 3, 21),
-        daily_cycle  :: Bool     = true,
+        param_dict     :: Dict{Symbol,Float32},
+        param_specs    :: Vector{ParamSpec};
+        trunc          :: Int      = 31,
+        nlayers        :: Int      = 8,
+        start_date     :: DateTime = DateTime(2000, 3, 21),
+        daily_cycle    :: Bool     = true,
+        seasonal_cycle :: Bool     = false,
     )
-    model, _ = _build_model(param_dict, param_specs; trunc, nlayers, daily_cycle)
+    model, _ = _build_model(param_dict, param_specs; trunc, nlayers, daily_cycle, seasonal_cycle)
     sim = initialize!(model)
     sim.variables.prognostic.clock.time = start_date
     return sim
@@ -62,6 +64,9 @@ function run_climate_validation(
 
     default_clm = _run_clm(default_dict,  specs, cfg, n_years, "default"; dt=dt)
     trained_clm = _run_clm(trained_dict,  specs, cfg, n_years, "trained"; dt=dt)
+    # NOTE: _run_clm reads cfg.daily_cycle and cfg.seasonal_cycle from the TrainingConfig the
+    # result was actually trained with -- validating with a different seasonal_cycle setting
+    # than training used would silently produce a meaningless comparison.
 
     stat_start = n_years - stat_years + 1
     return (
@@ -78,7 +83,8 @@ end
 
 function _run_clm(param_dict, specs, cfg, n_years, label; dt=nothing)
     println("Climate run: $label ...")
-    model, sg = _build_model(param_dict, specs; trunc=cfg.trunc, nlayers=cfg.nlayers, dt=dt)
+    model, sg = _build_model(param_dict, specs; trunc=cfg.trunc, nlayers=cfg.nlayers,
+                              daily_cycle=cfg.daily_cycle, seasonal_cycle=cfg.seasonal_cycle, dt=dt)
     cb = DailyMeansCallback(sg)
     add!(model, :daily_means => cb)
     sim = initialize!(model)

@@ -23,6 +23,7 @@ Base.@kwdef struct TrainingConfig
     verbose             :: Bool      = true
     warmup_enzyme       :: Bool      = true
     daily_cycle         :: Bool      = true
+    seasonal_cycle      :: Bool      = false
 end
 
 """Return a minimal config for quick smoke tests (trunc=5, 5 batches, 5-day spinup)."""
@@ -226,7 +227,7 @@ function calibrate!(
 
     # Build model
     sg     = SpectralGrid(trunc=config.trunc, nlayers=config.nlayers)
-    planet = Earth(sg; daily_cycle=config.daily_cycle, seasonal_cycle=false)
+    planet = Earth(sg; daily_cycle=config.daily_cycle, seasonal_cycle=config.seasonal_cycle)
     model  = PrimitiveWetModel(sg; planet=planet)
     p      = vec(parameters(model))
 
