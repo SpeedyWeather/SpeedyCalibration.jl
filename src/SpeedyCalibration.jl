@@ -29,6 +29,7 @@ include("validation.jl")
 include("analysis.jl")
 
 export ParamSpec
+export get_by_path, set_by_path!, to_raw, sigmoid_param, sigmoid_grad_factor
 export LossConfig, OSR_LOSS, OSR_SRU_SRD_LOSS, TRENBERTH_LOSS, make_normalized_loss
 export TrainingConfig, quick_test_config
 export TrainingResult, save_result, load_result, save_artifacts
