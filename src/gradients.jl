@@ -86,11 +86,13 @@ function compute_gradients!(
         end
     end
 
-    # Enzyme reverse pass
-    dt = 2 * model.time_stepping.Δt
-    Enzyme.autodiff(Enzyme.Reverse, SpeedyWeather.timestep!, Const,
+    # Enzyme reverse pass. `time_step!(vars, time_stepping, model)` is the dynamics+physics
+    # step only (no clock advance) — matches the old `timestep!(variables, dt, model)`
+    # semantics this call previously relied on before SpeedyWeather.jl replaced `timestep!`
+    # with the `time_step!` family (SpeedyWeather 0.22).
+    Enzyme.autodiff(Enzyme.Reverse, SpeedyWeather.time_step!, Const,
         Duplicated(variables, dvariables),
-        Const(dt),
+        Const(model.time_stepping),
         Duplicated(model, dmodel))
 
     model.feedback.nans_detected = false

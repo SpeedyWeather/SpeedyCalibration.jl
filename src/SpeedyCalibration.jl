@@ -15,10 +15,12 @@ using Dates
 using RingGrids
 using JLD2
 using NCDatasets
+using Checkpointing
 
 include("param_spec.jl")
 include("loss.jl")
 include("gradients.jl")
+include("gradients_checkpointed.jl")
 include("callbacks.jl")
 include("diagnostics.jl")
 include("reference_data.jl")
@@ -31,6 +33,7 @@ export LossConfig, OSR_LOSS, OSR_SRU_SRD_LOSS, TRENBERTH_LOSS, make_normalized_l
 export TrainingConfig, quick_test_config
 export TrainingResult, save_result, load_result, save_artifacts
 export enzyme_warmup, calibrate!
+export compute_gradients_checkpointed!
 export DailyMeansCallback
 export build_climate_sim, run_climate_validation
 export plot_training, plot_climate, plot_experiment_comparison
