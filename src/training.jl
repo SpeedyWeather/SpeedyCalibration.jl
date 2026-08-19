@@ -388,8 +388,12 @@ function calibrate!(
         for (i, spec) in enumerate(param_specs)
             set_by_path!(new_p, spec.path, phys_values[i])
         end
+        # `Leapfrog.first_step_euler` (a mutable flag you had to reset to avoid
+        # re-triggering an Euler spin-up step after a mid-training param update) was
+        # removed in SpeedyWeather 0.22 -- `prognostic_step` now decides via
+        # `clock.step_counter <= 1` instead, and `reconstruct` doesn't touch the clock,
+        # so no equivalent reset is needed here any more.
         updated_model = SpeedyWeather.reconstruct(sim.model, new_p)
-        updated_model.time_stepping.first_step_euler = false
         sim = Simulation(_variables, updated_model)
 
         # record history
