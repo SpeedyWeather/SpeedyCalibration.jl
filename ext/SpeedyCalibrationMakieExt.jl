@@ -6,6 +6,45 @@ using GeoMakie
 using RingGrids
 import GeoMakie.Makie.GeometryBasics: Polygon, Point
 
+const SW_BG   = "#F3F2F2"
+const SW_INK  = "#201E1D"
+const SW_GREY = "#4A4644"
+const SW_RED  = "#AE1800"
+const SW_HAIR = "#C9C6C4"
+
+const SW_DECK_THEME = Theme(
+    backgroundcolor = :transparent,
+    fonts = (regular = "Arial", bold = "Arial Bold", mono = "Courier New"),
+    fontsize = 14,
+    figure_padding = 14,
+    palette = (color = [SW_GREY, SW_RED, SW_INK],),
+    Axis = (
+        backgroundcolor    = :transparent,
+        titlefont = :regular, titlesize = 16, titlecolor = SW_INK, titlealign = :left,
+        xlabelsize = 14, ylabelsize = 14, xlabelcolor = SW_GREY, ylabelcolor = SW_GREY,
+        xticklabelsize = 14, yticklabelsize = 14,
+        xticklabelcolor = SW_GREY, yticklabelcolor = SW_GREY,
+        xgridvisible = false, ygridvisible = true,
+        ygridcolor = SW_HAIR, ygridwidth = 0.8,
+        topspinevisible = false, rightspinevisible = false,
+        leftspinecolor = SW_INK, bottomspinecolor = SW_INK,
+        leftspinewidth = 1, bottomspinewidth = 1,
+        xtickcolor = SW_INK, ytickcolor = SW_INK, xtickwidth = 1, ytickwidth = 1,
+        xticksize = 4, yticksize = 4, xminorticksvisible = false,
+        titlegap = 6,
+        xlabelpadding = 4,
+        ylabelpadding = 4,
+    ),
+    Lines = (linewidth = 2.5,),
+    Legend = (
+        framevisible = false,
+        labelsize = 14,
+        labelcolor = SW_INK,
+        patchsize = (18, 2),
+        padding = (0, 0, 0, 0),
+    ),
+)
+
 # plot_training
 
 function SpeedyCalibration.plot_training(
@@ -20,17 +59,40 @@ function SpeedyCalibration.plot_training(
     ax_kw = (xgridvisible=false, ygridvisible=false,
              topspinevisible=false, rightspinevisible=false)
 
-    # Loss curve
-    fig_loss = Figure(size=(900, 320), fontsize=13)
-    ax1 = Axis(fig_loss[1,1]; xlabel="Batch", ylabel="Loss",
-               title="Training loss", ax_kw...)
-    lines!(ax1, batches, h[:loss];          color=:lightgray, label="batch")
-    lines!(ax1, batches, h[:smoothed_loss]; color=:royalblue, linewidth=2, label="smoothed")
+    # Loss curve — log-scale so that a few noisy single-batch spikes (this
+    # estimator averages only `samples_per_batch` single-timestep gradients
+    # over a short window, so raw per-batch loss is high-variance) don't
+    # visually dwarf the smoothed trend on a linear axis.
+    has_grad_norm = haskey(h, :grad_norm) && !isempty(h[:grad_norm])
+    fig_loss = Figure(size=(has_grad_norm ? 1300 : 900, 320), fontsize=13)
+    loss_floor = 1f-3   # log-scale guard: loss/grad_norm are ≥0, never exactly log(0)
+    ax1 = Axis(fig_loss[1,1]; xlabel="Batch", ylabel="Loss", yscale=log10,
+               title="Training loss (log scale)", ax_kw...)
+    lines!(ax1, batches, max.(h[:loss], loss_floor);          color=:lightgray, label="batch")
+    lines!(ax1, batches, max.(h[:smoothed_loss], loss_floor); color=:royalblue, linewidth=2, label="smoothed")
     axislegend(ax1; position=:rt)
 
     ax2 = Axis(fig_loss[1,2]; xlabel="Batch", ylabel="Learning rate",
                title="LR schedule", ax_kw...)
     lines!(ax2, batches, h[:lr]; color=:tomato, linewidth=2)
+
+    # Gradient norm vs. grad_clip — if the clip triggers on (nearly) every
+    # batch it isn't an occasional safety clamp, it's a permanent global-norm
+    # renormalisation of the whole parameter-gradient vector every step; that
+    # changes what `grad_clip` is actually doing and is worth seeing directly.
+    if has_grad_norm
+        ax3 = Axis(fig_loss[1,3]; xlabel="Batch", ylabel="‖grad‖ (log scale)", yscale=log10,
+                   title="Gradient norm vs. clip", ax_kw...)
+        lines!(ax3, batches, max.(h[:grad_norm], loss_floor); color=:mediumseagreen, linewidth=2, label="‖g‖")
+        grad_clip = result.config.grad_clip
+        hlines!(ax3, [grad_clip]; color=:black, linestyle=:dash, linewidth=1, label="grad_clip")
+        axislegend(ax3; position=:rt)
+        clip_rate = haskey(h, :clipped) && !isempty(h[:clipped]) ? sum(h[:clipped])/length(h[:clipped]) : NaN
+        if isfinite(clip_rate)
+            text!(ax3, 0.02, 0.02; text = "clipped: $(round(100*clip_rate, digits=0))% of batches",
+                  space=:relative, align=(:left,:bottom), fontsize=11, color=SW_GREY)
+        end
+    end
 
     # Flux trajectories
     ncols   = min(3, length(fkeys))
@@ -95,116 +157,107 @@ function SpeedyCalibration.plot_climate(
         save_dir::Union{Nothing,AbstractString} = nothing,
         loss_config::Union{Nothing,LossConfig}  = nothing,
     )
-    ax_kw = (xgridvisible=false, ygridvisible=false,
-             topspinevisible=false, rightspinevisible=false)
+    with_theme(SW_DECK_THEME) do
+        ax_kw = (xgridvisible=false, ygridvisible=false,
+                 topspinevisible=false, rightspinevisible=false)
 
-    default_cb = validation.default_cb
-    trained_cb = validation.trained_cb
+        default_cb = validation.default_cb
+        trained_cb = validation.trained_cb
 
-    # reference target: use loss_config's target if this flux was trained against it,
-    # otherwise fall back to the fixed Trenberth value
-    ref_for(key, trenberth) = !isnothing(loss_config) && haskey(loss_config.targets, key) ?
-        Float64(loss_config.targets[key]) : trenberth
+        ref_for(key, trenberth) = !isnothing(loss_config) && haskey(loss_config.targets, key) ?
+            Float64(loss_config.targets[key]) : trenberth
 
-    # SW radiation budget
-    sw_panels = [
-        (:osr, "OSR [W m⁻²]", cb -> cb.osr,  101.9),
-        (:srd, "SRD [W m⁻²]", cb -> cb.srd,  168.0),
-        (:sru, "SRU [W m⁻²]", cb -> cb.sru,   23.0),
-    ]
-    fig_rad = Figure(size=(1400, 320), fontsize=13)
-    for (col, (key, title, extractor, trenberth)) in enumerate(sw_panels)
-        ref = ref_for(key, trenberth)
-        ax = Axis(fig_rad[1, col]; xlabel="Day", ylabel="W m⁻²",
-                  title=title, ax_kw...)
-        lines!(ax, default_cb.days, extractor(default_cb); color=:gray50, label="default")
-        lines!(ax, trained_cb.days, extractor(trained_cb); color=:royalblue, label="trained")
-        hlines!(ax, [ref]; color=:black, linestyle=:dash, linewidth=1, label="Trenberth")
-        col == 1 && axislegend(ax; position=:rt)
+        # SW radiation budget
+        sw_panels = [
+            (:osr, "OSR [W m⁻²]", cb -> cb.osr,  101.9),
+            (:srd, "SRD [W m⁻²]", cb -> cb.srd,  168.0),
+            (:sru, "SRU [W m⁻²]", cb -> cb.sru,   23.0),
+        ]
+        fig_rad = Figure(size=(1400, 320), fontsize=13)
+        for (col, (key, title, extractor, trenberth)) in enumerate(sw_panels)
+            ref = ref_for(key, trenberth)
+            ax = Axis(fig_rad[1, col]; xlabel="Day", ylabel="W m⁻²",
+                      title=title, ax_kw...)
+            lines!(ax, default_cb.days, extractor(default_cb); color=SW_GREY, label="default")
+            lines!(ax, trained_cb.days, extractor(trained_cb); color=SW_RED, label="trained")
+            hlines!(ax, [ref]; color=SW_INK, linestyle=:dash, linewidth=1.5, label="Trenberth")
+            col == 1 && axislegend(ax; position=:rt)
+        end
+
+        # LW budget
+        lw_panels = [
+            (:olr, "OLR [W m⁻²]", cb -> cb.olr,  235.0),
+            (:lrd, "LRD [W m⁻²]", cb -> cb.lrd,  333.0),
+            (:lru, "LRU [W m⁻²]", cb -> cb.lru,  398.0),
+        ]
+        fig_lw = Figure(size=(1400, 320), fontsize=13)
+        for (col, (key, title, extractor, trenberth)) in enumerate(lw_panels)
+            ref = ref_for(key, trenberth)
+            ax = Axis(fig_lw[1, col]; xlabel="Day", ylabel="W m⁻²",
+                      title=title, ax_kw...)
+            lines!(ax, default_cb.days, extractor(default_cb); color=SW_GREY, label="default")
+            lines!(ax, trained_cb.days, extractor(trained_cb); color=SW_RED, label="trained")
+            hlines!(ax, [ref]; color=SW_INK, linestyle=:dash, linewidth=1.5, label="Trenberth")
+            col == 1 && axislegend(ax; position=:rt)
+        end
+
+        # Precipitation
+        fig_precip = Figure(size=(900, 320), fontsize=13)
+        ax_p = Axis(fig_precip[1,1]; xlabel="Day", ylabel="mm day⁻¹",
+                    title="Total precipitation", ax_kw...)
+        lines!(ax_p, default_cb.days, default_cb.precip_total; color=SW_GREY, label="default")
+        lines!(ax_p, trained_cb.days, trained_cb.precip_total; color=SW_RED, label="trained")
+        hlines!(ax_p, [2.74]; color=SW_INK, linestyle=:dash, linewidth=1.5, label="ERA5 ~2.74")
+        axislegend(ax_p; position=:rt)
+
+        # Trenberth summary bar chart
+        summary_keys = [(:osr, "OSR",  s -> s.osr,  101.9),
+                        (:olr, "OLR",  s -> s.olr,  235.0),
+                        (:srd, "SRD",  s -> s.srd,  168.0),
+                        (:sru, "SRU",  s -> s.sru,   23.0),
+                        (:lrd, "LRD",  s -> s.lrd,  333.0),
+                        (:lru, "LRU",  s -> s.lru,  398.0)]
+        labels  = [t for (_,t,_,_) in summary_keys]
+        refs    = Float64[ref_for(k, r) for (k,_,_,r) in summary_keys]
+        def_v   = Float64[f(validation.default) for (_,_,f,_) in summary_keys]
+        train_v = Float64[f(validation.trained) for (_,_,f,_) in summary_keys]
+        def_err   = def_v   .- refs
+        train_err = train_v .- refs
+
+        fig_summary = Figure(size=(900, 400), fontsize=13)
+        ax_s = Axis(fig_summary[1,1]; xticks=(1:length(labels), labels),
+                    ylabel="Bias vs Trenberth [W m⁻²]",
+                    title="Equilibrium flux biases", ax_kw...)
+        xs = 1:length(labels)
+        barplot!(ax_s, xs .- 0.2, def_err;   width=0.35, color=SW_GREY, label="default")
+        barplot!(ax_s, xs .+ 0.2, train_err; width=0.35, color=SW_RED,   label="trained")
+        hlines!(ax_s, [0.0]; color=SW_INK, linewidth=1)
+        axislegend(ax_s; position=:rt)
+
+        # Vertical temperature profile + anomaly flags
+        fig_temp = SpeedyCalibration.plot_vertical_profile(
+            validation.trained.temp_profile;
+            reference   = validation.default.temp_profile,
+            label       = "trained",
+            ref_label   = "default",
+            title       = "Equilibrium temperature profile",
+        )
+
+        if !isnothing(save_dir)
+            mkpath(save_dir)
+            save(joinpath(save_dir, "fig_clm_rad.pdf"),     fig_rad)
+            save(joinpath(save_dir, "fig_clm_lw.pdf"),      fig_lw)
+            save(joinpath(save_dir, "fig_clm_precip.pdf"),  fig_precip)
+            save(joinpath(save_dir, "fig_clm_summary.pdf"), fig_summary)
+            save(joinpath(save_dir, "fig_clm_temp.pdf"),    fig_temp)
+        end
+
+        return (; fig_rad, fig_lw, fig_precip, fig_summary, fig_temp)
     end
-
-    # LW budget
-    lw_panels = [
-        (:olr, "OLR [W m⁻²]", cb -> cb.olr,  235.0),
-        (:lrd, "LRD [W m⁻²]", cb -> cb.lrd,  333.0),
-        (:lru, "LRU [W m⁻²]", cb -> cb.lru,  398.0),
-    ]
-    fig_lw = Figure(size=(1400, 320), fontsize=13)
-    for (col, (key, title, extractor, trenberth)) in enumerate(lw_panels)
-        ref = ref_for(key, trenberth)
-        ax = Axis(fig_lw[1, col]; xlabel="Day", ylabel="W m⁻²",
-                  title=title, ax_kw...)
-        lines!(ax, default_cb.days, extractor(default_cb); color=:gray50, label="default")
-        lines!(ax, trained_cb.days, extractor(trained_cb); color=:tomato,    label="trained")
-        hlines!(ax, [ref]; color=:black, linestyle=:dash, linewidth=1, label="Trenberth")
-        col == 1 && axislegend(ax; position=:rt)
-    end
-
-    # Precipitation
-    fig_precip = Figure(size=(900, 320), fontsize=13)
-    ax_p = Axis(fig_precip[1,1]; xlabel="Day", ylabel="mm day⁻¹",
-                title="Total precipitation", ax_kw...)
-    lines!(ax_p, default_cb.days, default_cb.precip_total; color=:gray50, label="default")
-    lines!(ax_p, trained_cb.days, trained_cb.precip_total; color=:royalblue, label="trained")
-    hlines!(ax_p, [2.74]; color=:black, linestyle=:dash, linewidth=1, label="ERA5 ~2.74")
-    axislegend(ax_p; position=:rt)
-
-    # Trenberth summary bar chart
-    summary_keys = [(:osr, "OSR",  s -> s.osr,  101.9),
-                    (:olr, "OLR",  s -> s.olr,  235.0),
-                    (:srd, "SRD",  s -> s.srd,  168.0),
-                    (:sru, "SRU",  s -> s.sru,   23.0),
-                    (:lrd, "LRD",  s -> s.lrd,  333.0),
-                    (:lru, "LRU",  s -> s.lru,  398.0)]
-    labels  = [t for (_,t,_,_) in summary_keys]
-    refs    = Float64[ref_for(k, r) for (k,_,_,r) in summary_keys]
-    def_v   = Float64[f(validation.default) for (_,_,f,_) in summary_keys]
-    train_v = Float64[f(validation.trained) for (_,_,f,_) in summary_keys]
-    def_err   = def_v   .- refs
-    train_err = train_v .- refs
-
-    fig_summary = Figure(size=(900, 400), fontsize=13)
-    ax_s = Axis(fig_summary[1,1]; xticks=(1:length(labels), labels),
-                ylabel="Bias vs Trenberth [W m⁻²]",
-                title="Equilibrium flux biases", ax_kw...)
-    xs = 1:length(labels)
-    barplot!(ax_s, xs .- 0.2, def_err;   width=0.35, color=:gray60,    label="default")
-    barplot!(ax_s, xs .+ 0.2, train_err; width=0.35, color=:royalblue, label="trained")
-    hlines!(ax_s, [0.0]; color=:black, linewidth=1)
-    axislegend(ax_s; position=:rt)
-
-    # Vertical temperature profile + anomaly flags
-    fig_temp = SpeedyCalibration.plot_vertical_profile(
-        validation.trained.temp_profile;
-        reference   = validation.default.temp_profile,
-        label       = "trained",
-        ref_label   = "default",
-        title       = "Equilibrium temperature profile",
-    )
-
-    if !isnothing(save_dir)
-        mkpath(save_dir)
-        save(joinpath(save_dir, "fig_clm_rad.pdf"),     fig_rad)
-        save(joinpath(save_dir, "fig_clm_lw.pdf"),      fig_lw)
-        save(joinpath(save_dir, "fig_clm_precip.pdf"),  fig_precip)
-        save(joinpath(save_dir, "fig_clm_summary.pdf"), fig_summary)
-        save(joinpath(save_dir, "fig_clm_temp.pdf"),    fig_temp)
-    end
-
-    return (; fig_rad, fig_lw, fig_precip, fig_summary, fig_temp)
 end
 
 # plot_vertical_profile
 
-"""
-    plot_vertical_profile(profile; reference=nothing, label="profile", ref_label="reference",
-                           ratio_threshold=1.5, title="Vertical profile") -> Figure
-
-Plot a vertical profile (e.g. the temperature profile from `DailyMeansCallback`)
-against layer index, optionally overlaid with a `reference` profile. Layers
-flagged by [`SpeedyCalibration.vertical_gradient_anomalies`](@ref) are marked
-with a red ring.
-"""
 function SpeedyCalibration.plot_vertical_profile(
         profile::AbstractVector;
         reference::Union{Nothing,AbstractVector} = nothing,
@@ -236,13 +289,6 @@ end
 
 # plot_nan_watch
 
-"""
-    plot_nan_watch(cb::NaNWatchCallback; save_dir=nothing) -> Figure
-
-Plot non-finite counts and max |value| over time for each field tracked by a
-[`NaNWatchCallback`](@ref). Generalises the per-scheme NaN timeseries plots
-from `diagnose_longwave_timeseries.jl` to any tracked field set.
-"""
 function SpeedyCalibration.plot_nan_watch(
         cb::NaNWatchCallback;
         save_dir::Union{Nothing,AbstractString} = nothing,
@@ -272,14 +318,6 @@ end
 
 # Spatial map plotting
 
-"""
-    plot_field_map(lons, lats, data; colormap=:viridis, colorrange=nothing,
-                    title="", coastlines=true) -> Figure
-
-Plot a single `(lon, lat)` field as a global heatmap with optional coastlines.
-Generalises `plot_netcdf_variable` (`helpers/plotting.jl`) to arbitrary
-lon/lat-gridded data (model output or reference/satellite data alike).
-"""
 function SpeedyCalibration.plot_field_map(
         lons::AbstractVector, lats::AbstractVector, data::AbstractMatrix;
         colormap = :viridis,
@@ -300,15 +338,6 @@ function SpeedyCalibration.plot_field_map(
     return fig
 end
 
-"""
-    plot_native_field(field; colormap=:viridis, colorrange=nothing,
-                       coastline_color=:white, title="") -> Figure
-
-Plot a `RingGrids` field directly on its native grid as cell polygons (no
-interpolation). Generalises `plot_native!` from
-`validation/chapter3_validation_plots.ipynb` into a standalone, reusable
-function returning its own `Figure`.
-"""
 function SpeedyCalibration.plot_native_field(
         field;
         colormap = :viridis,
@@ -332,17 +361,6 @@ function SpeedyCalibration.plot_native_field(
     return fig
 end
 
-"""
-    plot_comparison_map(sim, ref, lons, lats; sim_label="Simulation",
-                         ref_label="Reference", colormap=:viridis,
-                         diff_colormap=:RdBu, title_prefix="") -> Figure
-
-Three-panel comparison map: `sim`, `ref`, and their difference (`sim - ref`)
-with a symmetric diverging colormap. Generalises `create_comparison_plot`
-(`helpers/plotting.jl`) and the EUMETSAT/CESM2 comparison-plot functions
-(`shortwave/compare_osr_monthly_eumetsat.jl`) into one function usable for
-any sim-vs-reference field (OSR, temperature, precip, ...).
-"""
 function SpeedyCalibration.plot_comparison_map(
         sim::AbstractMatrix, ref::AbstractMatrix,
         lons::AbstractVector, lats::AbstractVector;
@@ -384,17 +402,6 @@ function SpeedyCalibration.plot_comparison_map(
     return fig
 end
 
-# plot_experiment_comparison
-
-"""
-    plot_experiment_comparison(results::Vector{TrainingResult}; labels=nothing) -> NamedTuple
-
-Compare multiple `TrainingResult`s side by side: smoothed loss curves overlaid,
-and final parameter values as a grouped bar chart (normalised to each
-parameter's bounds). Generalises the cross-experiment comparison plots from
-`differentiability/gpu_experiments/src/plotting.jl` to any set of
-`SpeedyCalibration.calibrate!` runs.
-"""
 function SpeedyCalibration.plot_experiment_comparison(
         results::Vector{TrainingResult};
         labels::Union{Nothing,Vector{<:AbstractString}} = nothing,
@@ -407,7 +414,6 @@ function SpeedyCalibration.plot_experiment_comparison(
     ax_kw = (xgridvisible=false, ygridvisible=false,
              topspinevisible=false, rightspinevisible=false)
 
-    # Loss curves overlay
     fig_loss = Figure(size=(900, 400), fontsize=13)
     ax_l = Axis(fig_loss[1,1]; xlabel="Batch", ylabel="Smoothed loss",
                 title="Loss comparison across runs", yscale=log10, ax_kw...)
@@ -417,7 +423,6 @@ function SpeedyCalibration.plot_experiment_comparison(
     end
     axislegend(ax_l; position=:rt)
 
-    # Parameter endpoints
     all_names = unique(vcat([[s.name for s in r.param_specs] for r in results]...))
     fig_params = Figure(size=(max(500, 200*length(all_names)), 400), fontsize=13)
     ax_p = Axis(fig_params[1,1]; xticks=(1:length(all_names), string.(all_names)),

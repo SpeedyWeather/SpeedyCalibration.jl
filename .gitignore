@@ -18,11 +18,36 @@ docs/node_modules/
 docs/.CondaPkg
 package-lock.json
 
-# Generated run output from examples/ (jld2 results, figures, logs, configs)
-examples/output/
+# Generated run output from examples/ (jld2 results, figures, logs, configs).
+# Generic pattern: any output/ dir anywhere under examples/, not just top-level,
+# so new experiment folders never need to be added here by hand.
+examples/**/output/
+
+# Run logs from long julia script invocations (nohup ... > foo.log), not source.
+examples/**/*.log
 
 # no jupyter notebook checkpoints
 .ipynb_checkpoints/
 
 # vs code
 .vscode/
+
+# Exploratory/diagnostic notebooks and scripts, not tracked by default.
+# Keeps day-to-day experimentation out of `git status`/`git add -A` without
+# losing anything locally. To publish something specific, force-add it:
+#   git add -f examples/some_folder/some_notebook.ipynb
+examples/trenberth_blowup_fix/
+examples/trenberth_batchdays_sweep/
+examples/trenberth_lrd_weight_sweep/
+examples/trenberth_structural_fixes/
+examples/trenberth_validation/
+examples/trenberth_batchdays_gradcount_sweep/
+examples/trenberth_ensemble_uncertainty/
+examples/single_param_diagnostics/
+# JeevanjeeRadiation LW-scheme swap: REFUTED (production-resolution spinup unstable at both ends
+# of emissivity_atmosphere tested, see project_trenberth_jeevanjee_cloudabs_seasonal memory).
+# Kept locally for reference in case this direction is revisited, not tracked.
+examples/trenberth_jeevanjee_full/
+
+# Scratch PR-description drafts, not part of the codebase.
+.pr_body*.md

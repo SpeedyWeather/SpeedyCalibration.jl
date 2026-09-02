@@ -12,6 +12,7 @@ Base.@kwdef struct TrainingConfig
     loss_threshold      :: Float32   = 500f0
     patience            :: Int       = 30
     grad_clip           :: Float32   = 5f0
+    clip_groups         :: Union{Nothing,Vector{Vector{Int}}} = nothing
     enable_lr_decay     :: Bool      = true
     lr_decay_factor     :: Float32   = 0.5f0
     lr_plateau_patience :: Int       = 50
@@ -19,10 +20,26 @@ Base.@kwdef struct TrainingConfig
     max_lr_decays       :: Int       = 3
     trunc               :: Int       = 31
     nlayers             :: Int       = 8
+    dt                  :: Union{Nothing,Period} = nothing
     start_date          :: DateTime  = DateTime(2000, 3, 21)
     verbose             :: Bool      = true
     warmup_enzyme       :: Bool      = true
     daily_cycle         :: Bool      = true
+    # Training has always run under a permanent-equinox climate (seasonal_cycle=false, hardcoded
+    # until this field was added). run_climate_validation defaults to seasonal_cycle=true (matching
+    # the thesis's own methodology), so every prior Trenberth run was TRAINED against one climate
+    # state and VALIDATED against a different one. examples/README.md's "Why not seasonal cycle
+    # next" section deliberately deferred turning this on until the lrd/olr structural coupling
+    # problem was resolved, reasoning that seasonal cycle adds another slow timescale on top of an
+    # already poorly-understood slow-timescale problem. Default kept `false` here for backward
+    # compatibility with every existing script; set `true` explicitly to opt in.
+    seasonal_cycle      :: Bool      = false
+    # extra kwargs splatted into PrimitiveWetModel(sg; planet=planet, model_kwargs...) --
+    # e.g. (; longwave_radiation=JeevanjeeRadiation(sg; emissivity_atmosphere=0.3f0)) to
+    # swap out a model component for calibration. `sg` used to build the component must
+    # match this config's `trunc`/`nlayers` (only `sg.NF` actually matters for most
+    # parameterization structs, but keep them matched to avoid surprises).
+    model_kwargs        :: NamedTuple = (;)
 end
 
 """Return a minimal config for quick smoke tests (trunc=5, 5 batches, 5-day spinup)."""
@@ -215,6 +232,8 @@ function calibrate!(
         :elapsed_time  => Float64[],
         :param_change  => Float32[],
         :lr            => Float32[],
+        :grad_norm     => Float32[],
+        :clipped       => Float32[],
     )
     for k in flux_keys; history[k] = Float32[]; end
     for name in param_names
@@ -226,8 +245,8 @@ function calibrate!(
 
     # Build model
     sg     = SpectralGrid(trunc=config.trunc, nlayers=config.nlayers)
-    planet = Earth(sg; daily_cycle=config.daily_cycle, seasonal_cycle=false)
-    model  = PrimitiveWetModel(sg; planet=planet)
+    planet = Earth(sg; daily_cycle=config.daily_cycle, seasonal_cycle=config.seasonal_cycle)
+    model  = PrimitiveWetModel(sg; planet=planet, config.model_kwargs...)
     p      = vec(parameters(model))
 
     init_phys = Float32[]
@@ -238,6 +257,11 @@ function calibrate!(
         push!(init_phys, val)
     end
     model = SpeedyWeather.reconstruct(model, p)
+    if config.dt !== nothing
+        # override the auto-scaled Δt (which grows large at coarse trunc, e.g. ~3h at
+        # trunc=5 -- too large to be numerically stable with the full physics package)
+        SpeedyWeather.set!(model.time_stepping; Δt=config.dt)
+    end
     sim   = initialize!(model)
     sim.variables.prognostic.clock.time = config.start_date
     SpeedyWeather.initialize!(sim; period=Day(365*100), output=false)
@@ -338,11 +362,29 @@ function calibrate!(
         loss        = compute_loss(mean_fluxes, loss_config)
         elapsed     = time() - start_time
 
-        # gradient clipping
+        # gradient clipping — global L2 norm across all params (default), or, if
+        # config.clip_groups is set, independently per physical block (e.g. SW vs
+        # LW-transmissivity). Global clipping lets whichever block has structurally
+        # larger raw gradients (see trenberth_full param_specs comments) dominate the
+        # shared clip budget every batch; per-block clipping stops that without fully
+        # freezing either block. grad_norm/clipped history always report the GLOBAL
+        # norm/whether any clipping fired, so runs stay comparable across both modes.
         scaled_grads = copy(raw_mean_grads)
         grad_norm = sqrt(sum(scaled_grads .^ 2))
-        if grad_norm > config.grad_clip
-            scaled_grads .*= config.grad_clip / grad_norm
+        if config.clip_groups === nothing
+            clipped = grad_norm > config.grad_clip
+            if clipped
+                scaled_grads .*= config.grad_clip / grad_norm
+            end
+        else
+            clipped = false
+            for group in config.clip_groups
+                group_norm = sqrt(sum(scaled_grads[group] .^ 2))
+                if group_norm > config.grad_clip
+                    scaled_grads[group] .*= config.grad_clip / group_norm
+                    clipped = true
+                end
+            end
         end
 
         # smoothed loss + plateau detection
@@ -399,6 +441,8 @@ function calibrate!(
         push!(history[:elapsed_time],  elapsed)
         push!(history[:param_change],  param_change)
         push!(history[:lr],            current_lr)
+        push!(history[:grad_norm],     grad_norm)
+        push!(history[:clipped],       clipped ? 1f0 : 0f0)
         for k in flux_keys
             push!(history[k], mean_fluxes[k])
         end
@@ -411,8 +455,10 @@ function calibrate!(
         if batch <= 10 || batch % 5 == 0
             flux_str = join([@sprintf("%s=%5.1f", k, mean_fluxes[k])
                              for k in flux_keys], " ")
-            @printf(io, "Batch %3d | LR %.1e | %s | L̄ %8.2f | Δp %.1e\n",
-                    batch, current_lr, flux_str, smoothed_loss, param_change)
+            clip_str = clipped ? @sprintf("‖g‖ %7.1f→%.1f*", grad_norm, config.grad_clip) :
+                                  @sprintf("‖g‖ %7.1f", grad_norm)
+            @printf(io, "Batch %3d | LR %.1e | %s | L̄ %8.2f | Δp %.1e | %s\n",
+                    batch, current_lr, flux_str, smoothed_loss, param_change, clip_str)
             flush(io)
         end
 
@@ -421,6 +467,24 @@ function calibrate!(
             stop_reason = "smoothed loss below threshold ($(config.loss_threshold))"
             @printf(io, "CONVERGED: smoothed_loss %.4f < %.4f\n",
                     smoothed_loss, config.loss_threshold)
+            break
+        end
+
+        # Patience-based early stop: once LR decay is exhausted (or disabled) and
+        # there's still been no improvement for `patience` batches, further batches
+        # are wasted at best and actively harmful at worst -- loss can keep climbing
+        # indefinitely on a divergent run (observed: best loss 601 at batch 57, then
+        # rose to 2133 by batch 300 with no further LR decays once max_lr_decays was
+        # reached). best_params/best_batch are already tracked correctly regardless,
+        # but stopping here saves compute and avoids `final_params` silently landing
+        # in a blown-up regime.
+        lr_decay_exhausted = !config.enable_lr_decay || lr_decay_count >= config.max_lr_decays
+        if lr_decay_exhausted && batches_since_best >= config.patience
+            stop_reason = "no improvement for $(config.patience) batches" *
+                          (config.enable_lr_decay ?
+                           " after exhausting $(config.max_lr_decays) LR decays" : "")
+            @printf(io, "EARLY STOP: %s (best batch %d, best smoothed_loss %.4f)\n",
+                    stop_reason, best_batch, best_smoothed_loss)
             break
         end
     end
@@ -440,6 +504,22 @@ function calibrate!(
 
     _print_summary(io, param_specs, init_phys, phys_values, history,
                    flux_keys, loss_config, conv_info)
+
+    clip_rate = isempty(history[:clipped]) ? 0.0 : mean(history[:clipped])
+    if clip_rate > 0.9
+        @printf(io,
+            "\nWARNING: grad_clip triggered on %.0f%% of batches (median ‖g‖=%.1f vs grad_clip=%.2f).\n",
+            100*clip_rate, sort(history[:grad_norm])[cld(length(history[:grad_norm]),2)], config.grad_clip)
+        println(io, "         grad_clip is acting as a permanent global-norm renormalisation, not an occasional")
+        println(io, "         safety clamp — every batch's direction is being rescaled to the same length,")
+        println(io, "         so params with structurally larger raw gradients dominate that shared budget.")
+        if config.clip_groups === nothing
+            println(io, "         Consider raising grad_clip, or setting config.clip_groups to clip per physical block.")
+        else
+            println(io, "         (clip_groups is already set — the dominance is within-group; consider raising grad_clip")
+            println(io, "          or splitting groups further.)")
+        end
+    end
 
     if best_batch != length(history[:batch])
         @printf(io, "\nNOTE: final batch (%d, loss=%.2f) is worse than best batch (%d, loss=%.4f).\n",
