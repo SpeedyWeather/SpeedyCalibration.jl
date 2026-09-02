@@ -4,6 +4,7 @@ authors = ["Niklas Viebig"]
 version = "0.1.0"
 
 [deps]
+Checkpointing = "eb46d486-4f9c-4c3d-b445-a617f2a2f1ca"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
@@ -24,6 +25,7 @@ SpeedyCalibrationMakieExt = ["CairoMakie", "GeoMakie"]
 
 [compat]
 CairoMakie = "0.13, 0.14, 0.15"
+Checkpointing = "0.11, 0.12"
 Dates = "1"
 Enzyme = "0.13"
 GeoMakie = "0.7"
@@ -32,7 +34,7 @@ NCDatasets = "0.13, 0.14"
 Optimisers = "0.3"
 Printf = "1.10"
 RingGrids = "0.1"
-SpeedyWeather = "0.21"
+SpeedyWeather = "0.22"
 SpeedyWeatherInternals = "0.2"
 Statistics = "1.10"
 julia = "1.10"

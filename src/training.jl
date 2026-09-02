@@ -277,7 +277,7 @@ function calibrate!(
     @printf(io, "\nSpinup (%d days)...\n", config.spinup_days)
     t_spinup = time()
     for _ in 1:(config.spinup_days * steps_per_day)
-        SpeedyWeather.timestep!(sim)
+        SpeedyWeather.time_step!(sim)
     end
     @printf(io, "Spinup complete in %.1f s.\n\n", time() - t_spinup)
     flush(io)
@@ -301,7 +301,7 @@ function calibrate!(
 
         for _ in 1:config.samples_per_batch
             for _ in 1:steps_per_sample
-                SpeedyWeather.timestep!(sim)
+                SpeedyWeather.time_step!(sim)
             end
             grads, means, _ = compute_gradients!(
                 sim.variables, sim.model, loss_config, param_specs)
@@ -314,7 +314,7 @@ function calibrate!(
 
         # advance any remainder of the batch window
         remainder = batch_steps - config.samples_per_batch * steps_per_sample
-        for _ in 1:remainder; SpeedyWeather.timestep!(sim); end
+        for _ in 1:remainder; SpeedyWeather.time_step!(sim); end
 
         if isempty(flux_accum[flux_keys[1]])
             println(io, "Batch $batch: all gradient samples invalid, stopping.")
@@ -388,8 +388,12 @@ function calibrate!(
         for (i, spec) in enumerate(param_specs)
             set_by_path!(new_p, spec.path, phys_values[i])
         end
+        # `Leapfrog.first_step_euler` (a mutable flag you had to reset to avoid
+        # re-triggering an Euler spin-up step after a mid-training param update) was
+        # removed in SpeedyWeather 0.22 -- `prognostic_step` now decides via
+        # `clock.step_counter <= 1` instead, and `reconstruct` doesn't touch the clock,
+        # so no equivalent reset is needed here any more.
         updated_model = SpeedyWeather.reconstruct(sim.model, new_p)
-        updated_model.time_stepping.first_step_euler = false
         sim = Simulation(_variables, updated_model)
 
         # record history

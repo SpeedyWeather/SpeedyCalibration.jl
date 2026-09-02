@@ -52,7 +52,7 @@ function SpeedyWeather.callback!(
     i = cb.counter
     t0 = vars.prognostic.clock.start
     cb.days[i] = Dates.value(vars.prognostic.clock.time - t0) / 86_400_000.0
-    cb.temp[i, :] .= vars.grid.temp_average
+    cb.temp[i, :] .= vars.dynamics.average_temperature_profile
     p = vars.parameterizations
     cb.olr[i] = _cosine_mean(p.outgoing_longwave,      model)
     cb.osr[i] = _cosine_mean(p.outgoing_shortwave,     model)
