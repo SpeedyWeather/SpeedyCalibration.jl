@@ -20,6 +20,8 @@ package-lock.json
 
 # Generated run output from examples/ (jld2 results, figures, logs, configs)
 examples/output/
+examples/**/output/
+examples/**/*.log
 
 # no jupyter notebook checkpoints
 .ipynb_checkpoints/
